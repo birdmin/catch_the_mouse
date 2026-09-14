@@ -298,9 +298,9 @@
     let isGameRunning = false;
     let isPaused = false;
     
-    // 완화된 난이도 파라미터
-    let popInterval = 1300;
-    let stayDuration = 1100;
+    // 추가 완화된 난이도 파라미터
+    let popInterval = 1500;
+    let stayDuration = 1200;
 
     let recentRecords = [];
 
@@ -334,8 +334,8 @@
       isGameRunning = true;
       isPaused = false;
       
-      popInterval = 1300;
-      stayDuration = 1100;
+      popInterval = 1500;
+      stayDuration = 1200;
       speedIndicator.textContent = "단계: 1단계 (보통)";
       speedIndicator.style.color = "#ffda79";
 
@@ -361,14 +361,14 @@
       
       if (elapsed >= 20) {
         // 20~30초 (3단계: 숙련)
-        popInterval = 800;
-        stayDuration = 650;
+        popInterval = 950;
+        stayDuration = 750;
         speedIndicator.textContent = "단계: 3단계 (숙련 🔥)";
         speedIndicator.style.color = "#ff5252";
       } else if (elapsed >= 10) {
         // 10~20초 (2단계: 빠름)
-        popInterval = 1000;
-        stayDuration = 850;
+        popInterval = 1200;
+        stayDuration = 950;
         speedIndicator.textContent = "단계: 2단계 (빠름 ⚡)";
         speedIndicator.style.color = "#ffbe76";
       }
