@@ -80,13 +80,6 @@
       color: #ffda79;
     }
 
-    #speed-indicator {
-      font-size: 12px;
-      color: #ff5252;
-      margin-left: 8px;
-      font-weight: bold;
-    }
-
     .audio-btn {
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid #ffda79;
@@ -242,7 +235,7 @@
 
     <div id="ui-bar">
       <div>
-        <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
+        <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! (⚡ 빠른 쥐는 200점!)</div>
         <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
       </div>
       <div class="info-box">
@@ -430,14 +423,11 @@
     let isHit = false;
     let isGameRunning = false;
 
-    let popInterval = 1500;
-
     const gameContainer = document.getElementById('game-container');
     const hammer = document.getElementById('hammer');
     const scoreDisplay = document.getElementById('score-display');
     const timeDisplay = document.getElementById('time-display');
     const cheeseContainer = document.getElementById('cheese-container');
-    const speedIndicator = document.getElementById('speed-indicator');
     const overlayScreen = document.getElementById('overlay-screen');
     const overlayTitle = document.getElementById('overlay-title');
     const overlayDesc = document.getElementById('overlay-desc');
@@ -495,10 +485,6 @@
       cheeseCount = 3;
       isGameRunning = true;
 
-      popInterval = 1500;
-      speedIndicator.textContent = "단계: 1단계 (보통)";
-      speedIndicator.style.color = "#ffda79";
-
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeRemaining;
       updateCheeseUI();
@@ -507,6 +493,7 @@
         const mouse = hole.querySelector('.mouse');
         mouse.classList.remove('up');
         mouse.dataset.clickable = "false";
+        mouse.dataset.isFast = "false";
         mouse.style.backgroundImage = '';
       });
     }
@@ -516,53 +503,20 @@
       return holes[idx];
     }
 
-    function adjustDifficulty() {
-      const elapsed = 30 - timeRemaining;
-
-      if (elapsed >= 20) {
-        popInterval = 1000;
-        speedIndicator.textContent = "단계: 3단계 (숙련 🔥)";
-        speedIndicator.style.color = "#ff5252";
-      } else if (elapsed >= 10) {
-        popInterval = 1300;
-        speedIndicator.textContent = "단계: 2단계 (빠름 ⚡)";
-        speedIndicator.style.color = "#ffbe76";
-      }
-    }
-
-    function scheduleNextMouse() {
+    function popUpMouse() {
       if (!isGameRunning) return;
 
-      gameTimeout = setTimeout(() => {
-        if (isGameRunning) {
-          popUpMouse();
-        }
-      }, popInterval);
-    }
-
-    function popUpMouse() {
       const hole = getRandomHole();
       const mouse = hole.querySelector('.mouse');
       isHit = false;
 
-      let currentStayDuration = 1200;
-      const elapsed = 30 - timeRemaining;
+      // 10% 확률로 빠른 보너스 쥐 출현
+      const isFast = Math.random() < 0.10;
+      const stayDuration = isFast ? 500 : 1000;
 
-      if (elapsed >= 20) {
-        const rand = Math.random();
-        if (rand < 0.4) {
-          currentStayDuration = 450;
-        } else {
-          currentStayDuration = 650;
-        }
-      } else if (elapsed >= 10) {
-        currentStayDuration = (Math.random() < 0.25) ? 650 : 900;
-      } else {
-        currentStayDuration = 1200;
-      }
-
+      mouse.dataset.isFast = isFast ? "true" : "false";
       mouse.dataset.clickable = "true";
-      mouse.style.backgroundImage = "url('mouse_popup.png')";
+      mouse.style.backgroundImage = isFast ? "url('fast_mouse_popup.png')" : "url('mouse_popup.png')";
       mouse.classList.add('up');
 
       setTimeout(() => {
@@ -580,9 +534,11 @@
             }
           }
         }
-      }, currentStayDuration);
+      }, stayDuration);
 
-      scheduleNextMouse();
+      if (isGameRunning) {
+        gameTimeout = setTimeout(popUpMouse, 1200);
+      }
     }
 
     holes.forEach(hole => {
@@ -595,10 +551,12 @@
 
         playHitSound();
 
-        score += 100;
+        const isFast = mouse.dataset.isFast === "true";
+        const points = isFast ? 200 : 100;
+        score += points;
         scoreDisplay.textContent = score;
 
-        mouse.style.backgroundImage = "url('mouse_hit.png')";
+        mouse.style.backgroundImage = isFast ? "url('fast_mouse_hit.png')" : "url('mouse_hit.png')";
 
         setTimeout(() => {
           mouse.classList.remove('up');
@@ -620,14 +578,13 @@
       timerInterval = setInterval(() => {
         timeRemaining--;
         timeDisplay.textContent = timeRemaining;
-        adjustDifficulty();
 
         if (timeRemaining <= 0) {
           endGame(true);
         }
       }, 1000);
 
-      scheduleNextMouse();
+      popUpMouse();
     }
 
     function endGame(isSuccess) {
