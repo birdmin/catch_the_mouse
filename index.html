@@ -189,7 +189,7 @@
 
     <div class="main-content">
       <!-- 3x3 필드 -->
-      <div class="grid">
+      <div class="grid" id="game-grid">
         <div class="hole"><div class="mouse"></div></div>
         <div class="hole"><div class="mouse"></div></div>
         <div class="hole"><div class="mouse"></div></div>
@@ -225,7 +225,85 @@
   </div>
 
   <script>
-    // 상태 변수
+    // --- Web Audio API 기반 효과음 시스템 ---
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // 1. 휘두르기 소리 (Swing)
+    function playSwingSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    // 2. 명중 타격음 (Hit)
+    function playHitSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    // 3. 승리 효과음 (Win)
+    function playWinSound() {
+      if (!audioCtx) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // 도, 미, 솔, 높은 도
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.1);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.1 + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + idx * 0.1);
+        osc.stop(audioCtx.currentTime + idx * 0.1 + 0.25);
+      });
+    }
+
+    // 4. 패배 효과음 (Game Over)
+    function playGameOverSound() {
+      if (!audioCtx) return;
+      const notes = [400, 350, 300, 220];
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.15);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime + idx * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.15 + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + idx * 0.15);
+        osc.stop(audioCtx.currentTime + idx * 0.15 + 0.3);
+      });
+    }
+
+    // --- 게임 상태 및 로직 변수 ---
     let score = 0;
     let cheeseCount = 5;
     let timeRemaining = 30;
@@ -233,16 +311,14 @@
     let lastHole = null;
     let isHit = false;
 
-    // 타이머 및 스케줄러 ID
     let gameTimerId = null;
     let popUpTimeoutId = null;
-
-    // 난이도 기본값
     let popUpInterval = 1500; 
 
     // DOM 요소
     const holes = document.querySelectorAll('.hole');
     const mice = document.querySelectorAll('.mouse');
+    const grid = document.getElementById('game-grid');
     const timeDisplay = document.getElementById('time-display');
     const scoreDisplay = document.getElementById('score-display');
     const cheeseDisplay = document.getElementById('cheese-display');
@@ -253,6 +329,14 @@
     // 초기화
     renderRecords();
 
+    // 격자 판 클릭 시 휘두르기 효과음 재생
+    grid.addEventListener('mousedown', () => {
+      if (isGameRunning) {
+        initAudio();
+        playSwingSound();
+      }
+    });
+
     startBtn.addEventListener('click', startGame);
 
     mice.forEach(mouse => {
@@ -260,9 +344,9 @@
     });
 
     function startGame() {
+      initAudio();
       if (isGameRunning) return;
 
-      // 게임 상태 리셋
       score = 0;
       cheeseCount = 5;
       timeRemaining = 30;
@@ -275,7 +359,6 @@
 
       startBtn.disabled = true;
 
-      // 타이머 시작 (1초마다)
       gameTimerId = setInterval(() => {
         timeRemaining--;
         timeDisplay.textContent = timeRemaining;
@@ -283,24 +366,22 @@
         adjustDifficulty();
 
         if (timeRemaining <= 0) {
-          endGame(true); // 성공으로 완료
+          endGame(true);
         }
       }, 1000);
 
-      // 첫 쥐 팝업 시작
       scheduleNextMouse();
     }
 
-    // 난이도 단계별 출현 간격(popUpInterval) 조절
     function adjustDifficulty() {
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
-        popUpInterval = 1000; // 3단계: 1초 간격
+        popUpInterval = 1000;
       } else if (elapsed >= 10) {
-        popUpInterval = 1300; // 2단계: 1.3초 간격
+        popUpInterval = 1300;
       } else {
-        popUpInterval = 1500; // 1단계: 1.5초 간격
+        popUpInterval = 1500;
       }
     }
 
@@ -321,28 +402,21 @@
       const mouse = hole.querySelector('.mouse');
       isHit = false;
 
-      // --- [확률 기반 머무르는 시간(stayDuration) 계산] ---
       let currentStayDuration = 1200;
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
-        // 3단계 (20~30초): 
-        // 10% 확률로 0.3초(300ms)
-        // 30% 확률로 0.45초(450ms)
-        // 60% 확률로 0.65초(650ms)
         const rand = Math.random();
         if (rand < 0.1) {
-          currentStayDuration = 300; // 0.3초 (슈퍼 패스트!)
+          currentStayDuration = 300;
         } else if (rand < 0.4) {
-          currentStayDuration = 450; // 0.45초
+          currentStayDuration = 450;
         } else {
-          currentStayDuration = 650; // 0.65초
+          currentStayDuration = 650;
         }
       } else if (elapsed >= 10) {
-        // 2단계 (10~20초): 25% 확률로 0.65초, 75% 확률로 0.9초
         currentStayDuration = (Math.random() < 0.25) ? 650 : 900;
       } else {
-        // 1단계 (0~10초): 고정 1.2초
         currentStayDuration = 1200;
       }
 
@@ -350,19 +424,17 @@
       mouse.style.backgroundImage = "url('mouse_popup.png')";
       mouse.classList.add('up');
 
-      // 머무르는 시간 종료 처리
       setTimeout(() => {
         if (mouse.classList.contains('up')) {
           mouse.classList.remove('up');
           mouse.dataset.clickable = "false";
 
-          // 맞추지 못하고 올라왔다 내려갔을 때 처리
           if (!isHit && isGameRunning) {
             cheeseCount--;
             updateCheeseUI();
 
             if (cheeseCount <= 0) {
-              endGame(false); // 치즈 소진으로 실패
+              endGame(false);
               return;
             }
           }
@@ -381,10 +453,14 @@
 
     function hitMouse(e) {
       if (!isGameRunning) return;
+      e.stopPropagation(); // 휘두르기 소리 중복 방지
+
       const mouse = e.target;
 
       if (mouse.dataset.clickable === "true") {
         isHit = true;
+        playHitSound(); // 명중 타격음 재생
+
         score++;
         scoreDisplay.textContent = score;
 
@@ -394,6 +470,8 @@
         setTimeout(() => {
           mouse.classList.remove('up');
         }, 200);
+      } else {
+        playSwingSound(); // 허공 타격 시 Swing 사운드
       }
     }
 
@@ -410,23 +488,25 @@
       clearInterval(gameTimerId);
       clearTimeout(popUpTimeoutId);
 
-      // 올라와 있는 모든 쥐 내리기
       mice.forEach(m => m.classList.remove('up'));
-
       startBtn.disabled = false;
 
-      // 결과 메시지 및 기록 저장
       if (isSuccess) {
-        alert(`🎉 축하합니다! 치즈를 성공적으로 지켰습니다!\n잡은 쥐: ${score}마리`);
+        playWinSound();
+        setTimeout(() => {
+          alert(`🎉 축하합니다! 치즈를 성공적으로 지켰습니다!\n잡은 쥐: ${score}마리`);
+        }, 200);
       } else {
-        alert(`💥 치즈를 모두 빼앗겼습니다! 게임 오버!\n잡은 쥐: ${score}마리`);
+        playGameOverSound();
+        setTimeout(() => {
+          alert(`💥 치즈를 모두 빼앗겼습니다! 게임 오버!\n잡은 쥐: ${score}마리`);
+        }, 200);
       }
 
       saveRecord(score, isSuccess);
       renderRecords();
     }
 
-    // localStorage 기록 저장 로직
     function saveRecord(score, isSuccess) {
       const now = new Date();
       const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -437,13 +517,11 @@
         date: timeStr
       };
 
-      // 1. 최근 기록 저장 (최대 5개)
       let recent = JSON.parse(localStorage.getItem('cheese_recent')) || [];
       recent.unshift(newRecord);
       if (recent.length > 5) recent.pop();
       localStorage.setItem('cheese_recent', JSON.stringify(recent));
 
-      // 2. 명예의 전당 저장 (성공한 기록 중 TOP 3)
       if (isSuccess) {
         let hof = JSON.parse(localStorage.getItem('cheese_hof')) || [];
         hof.push(newRecord);
@@ -453,9 +531,7 @@
       }
     }
 
-    // 기록 화면 렌더링
     function renderRecords() {
-      // 명예의 전당 출력
       const hof = JSON.parse(localStorage.getItem('cheese_hof')) || [];
       hallOfFameList.innerHTML = '';
       if (hof.length === 0) {
@@ -468,7 +544,6 @@
         });
       }
 
-      // 최근 기록 출력
       const recent = JSON.parse(localStorage.getItem('cheese_recent')) || [];
       recentRecordsList.innerHTML = '';
       if (recent.length === 0) {
