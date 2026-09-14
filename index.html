@@ -240,7 +240,7 @@
     // 난이도 기본값
     let popUpInterval = 1500; 
 
-    // DOM 요소를 가져옵니다
+    // DOM 요소
     const holes = document.querySelectorAll('.hole');
     const mice = document.querySelectorAll('.mouse');
     const timeDisplay = document.getElementById('time-display');
@@ -326,8 +326,18 @@
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
-        // 3단계 (20~30초): 40% 확률로 0.45초, 60% 확률로 0.65초
-        currentStayDuration = (Math.random() < 0.4) ? 450 : 650;
+        // 3단계 (20~30초): 
+        // 10% 확률로 0.3초(300ms)
+        // 30% 확률로 0.45초(450ms)
+        // 60% 확률로 0.65초(650ms)
+        const rand = Math.random();
+        if (rand < 0.1) {
+          currentStayDuration = 300; // 0.3초 (슈퍼 패스트!)
+        } else if (rand < 0.4) {
+          currentStayDuration = 450; // 0.45초
+        } else {
+          currentStayDuration = 650; // 0.65초
+        }
       } else if (elapsed >= 10) {
         // 2단계 (10~20초): 25% 확률로 0.65초, 75% 확률로 0.9초
         currentStayDuration = (Math.random() < 0.25) ? 650 : 900;
