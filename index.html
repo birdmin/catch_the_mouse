@@ -22,7 +22,6 @@
       overflow-x: hidden;
     }
 
-    /* 전체 레이아웃: 게임 화면과 우측 랭킹판 나란히 배치 */
     #main-wrapper {
       display: flex;
       gap: 20px;
@@ -147,7 +146,6 @@
       bottom: 10px;
     }
 
-    /* 게임 시작/종료 오버레이 (랭킹 없음) */
     .overlay {
       position: absolute;
       top: 0;
@@ -206,9 +204,9 @@
       display: none !important;
     }
 
-    /* 우측 랭킹 사이드바 레이아웃 (상단: TOP 3, 하단: 최근 기록 20개) */
+    /* 우측 랭킹 사이드바 레이아웃 */
     #sidebar-ranking {
-      width: 280px;
+      width: 320px;
       height: 540px;
       background: #242424;
       border: 4px solid #444;
@@ -238,7 +236,7 @@
       list-style: none;
       padding: 0;
       margin: 0;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .top3-item {
@@ -249,6 +247,7 @@
       background: rgba(255, 255, 255, 0.05);
       border-radius: 4px;
       font-weight: bold;
+      font-size: 13px;
     }
 
     .top3-item:nth-child(1) { color: #ffd700; }
@@ -279,10 +278,21 @@
     .recent-item {
       display: flex;
       justify-content: space-between;
-      padding: 4px 6px;
-      font-size: 12px;
+      align-items: center;
+      padding: 5px 6px;
+      font-size: 11px;
       color: #bbb;
       border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+
+    .recent-status-success {
+      color: #55efc4;
+      font-weight: bold;
+    }
+
+    .recent-status-fail {
+      color: #ff7675;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -464,7 +474,7 @@
     let isGameRunning = false;
     let popInterval = 1500;
 
-    // 로컬 스토리지 데이터 관리
+    // 로컬 스토리지 데이터 관리 (최근 기록 객체 배열 형태로 저장 구조 개선)
     let topScores = JSON.parse(localStorage.getItem('cheese_top3')) || [0, 0, 0];
     let recentScores = JSON.parse(localStorage.getItem('cheese_recent20')) || [];
 
@@ -493,7 +503,7 @@
         top3List.appendChild(li);
       });
 
-      // 하단 최근 기록 20개 렌더링
+      // 하단 최근 기록 20개 렌더링 (성공/실패 및 보너스 점수 표시)
       recentList.innerHTML = '';
       if (recentScores.length === 0) {
         const li = document.createElement('li');
@@ -506,7 +516,15 @@
         recentScores.forEach((rec, idx) => {
           const li = document.createElement('li');
           li.className = 'recent-item';
-          li.innerHTML = `<span>#${idx + 1}</span><span>${rec}점</span>`;
+          
+          const isSuccess = rec.isSuccess;
+          const statusClass = isSuccess ? 'recent-status-success' : 'recent-status-fail';
+          const statusText = isSuccess ? '🟢 성공' : '🔴 실패';
+
+          li.innerHTML = `
+            <span class="${statusClass}">${statusText}</span>
+            <span>최종: ${rec.finalScore}점 (+${rec.bonus}점)</span>
+          `;
           recentList.appendChild(li);
         });
       }
@@ -751,8 +769,14 @@
       topScores = topScores.slice(0, 3);
       localStorage.setItem('cheese_top3', JSON.stringify(topScores));
 
-      // 최근 기록 20개 갱신 및 저장
-      recentScores.unshift(finalScore);
+      // 최근 기록 20개 갱신 (성공 여부, 최종 점수, 보너스 점수 객체 형태로 저장)
+      const recordData = {
+        isSuccess: isSuccess && cheeseCount > 0,
+        finalScore: finalScore,
+        bonus: bonusScore
+      };
+
+      recentScores.unshift(recordData);
       if (recentScores.length > 20) {
         recentScores = recentScores.slice(0, 20);
       }
