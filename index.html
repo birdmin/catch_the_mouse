@@ -3,229 +3,314 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>치즈를 지켜라! (Catch the Mouse)</title>
+  <title>치즈를 지켜라! - 쥐 잡기 게임</title>
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
     }
-
     body {
       margin: 0;
       padding: 20px;
-      background-color: #2c3e50;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #1a1a1a;
+      color: #ffffff;
+      font-family: 'Pretendard', sans-serif;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
       min-height: 100vh;
-      color: #fff;
+      overflow-x: hidden;
     }
 
-    h1 {
-      margin: 10px 0;
-      color: #f1c40f;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    }
-
-    .game-container {
-      background-color: #34495e;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 900px;
-    }
-
-    .status-board {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 600px;
-      background-color: #1e2b37;
-      padding: 15px 25px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 1.2rem;
-      font-weight: bold;
-    }
-
-    .status-item span {
-      color: #e74c3c;
-    }
-    
-    .status-item #cheese-display {
-      color: #f1c40f;
-    }
-
-    .main-content {
+    #main-wrapper {
       display: flex;
       gap: 20px;
-      width: 100%;
-      justify-content: center;
       align-items: flex-start;
+      max-width: 100%;
       flex-wrap: wrap;
+      justify-content: center;
     }
 
-    /* 게임 판 (3x3 구멍) 및 커서 설정 */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 160px);
-      grid-template-rows: repeat(3, 160px);
-      gap: 15px;
-      background-color: #8e44ad;
-      padding: 15px;
-      border-radius: 10px;
-      cursor: url('hammer.png') 15 15, auto;
-    }
-
-    .grid:active {
-      cursor: url('hammer_hit.png') 15 15, auto;
-    }
-
-    .hole {
+    /* 원래의 배경 이미지 적용 */
+    #game-container {
       position: relative;
-      background-color: #4a235a;
-      border-radius: 50%;
+      width: 960px;
+      height: 540px;
+      background: url('background.png') no-repeat center/cover;
+      border: 4px solid #444;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: inset 0 10px 10px rgba(0, 0, 0, 0.7);
+      cursor: none;
+      flex-shrink: 0;
     }
 
-    .mouse {
-      width: 100%;
-      height: 100%;
+    /* 마우스 커서 추적 망치 */
+    #hammer {
       position: absolute;
-      top: 100%;
-      background-image: url('mouse_popup.png');
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      transition: top 0.1s ease-out;
+      width: 80px;
+      height: 80px;
+      background: url('hammer.png?v=1') no-repeat center/contain;
+      pointer-events: none;
+      z-index: 100;
+      transform-origin: 80% 80%;
+      transition: transform 0.05s ease-out;
+      display: none;
     }
 
-    .mouse.up {
-      top: 0;
+    #hammer.hit {
+      transform: rotate(-45deg);
     }
 
-    /* 사이드바 (기록판) */
-    .sidebar {
+    #score-board {
+      width: 320px;
+      height: 540px;
+      background: #2a2a2a;
+      border: 4px solid #444;
+      border-radius: 12px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      width: 260px;
+      gap: 12px;
+      flex-shrink: 0;
     }
 
-    .record-box {
-      background-color: #1e2b37;
-      padding: 15px;
-      border-radius: 10px;
+    .board-section {
+      display: flex;
+      flex-direction: column;
     }
 
-    .record-box h3 {
-      margin-top: 0;
-      margin-bottom: 10px;
-      color: #f1c40f;
-      border-bottom: 2px solid #34495e;
-      padding-bottom: 5px;
-      font-size: 1.1rem;
+    .board-section.recent {
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    #score-board h2 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      color: #ffda79;
+      border-bottom: 2px solid #444;
+      padding-bottom: 4px;
     }
 
     .record-list {
       list-style: none;
       padding: 0;
       margin: 0;
-      font-size: 0.95rem;
+      overflow-y: auto;
     }
 
     .record-list li {
-      padding: 4px 0;
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px dashed #2c3e50;
+      background: #333;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      line-height: 1.3;
     }
 
-    .controls {
-      margin-top: 20px;
+    .top-list li {
+      background: #3a3218;
+      border: 1px solid #ffda79;
+    }
+
+    .bonus-text {
+      font-size: 11px;
+      color: #ffda79;
+    }
+
+    #ui-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .info-box {
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cheese-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    #game-rule {
+      font-size: 14px;
+      color: #ffda79;
+    }
+
+    #speed-indicator {
+      font-size: 12px;
+      color: #ff5252;
+      margin-left: 8px;
+      font-weight: bold;
+    }
+
+    .grid-container {
+      position: absolute;
+      top: 140px;
+      left: 180px;
+      width: 600px;
+      height: 340px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .hole {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .mouse {
+      position: absolute;
+      bottom: -100%;
+      width: 110px;
+      height: 110px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      transition: bottom 0.15s ease-out;
+      cursor: none;
+    }
+
+    .mouse.up {
+      bottom: 10px;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      cursor: auto;
+    }
+
+    .overlay h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+      color: #ffda79;
+    }
+
+    .overlay p {
+      font-size: 18px;
+      margin-bottom: 25px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 15px;
     }
 
     .btn {
-      background-color: #27ae60;
-      color: white;
-      border: none;
-      padding: 12px 30px;
-      font-size: 1.2rem;
+      padding: 12px 28px;
+      font-size: 18px;
       font-weight: bold;
-      border-radius: 25px;
+      color: #1a1a1a;
+      background-color: #ffda79;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-      transition: all 0.2s;
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .btn-secondary {
+      background-color: #a0a0a0;
+      color: #ffffff;
     }
 
     .btn:hover {
-      background-color: #2ecc71;
-      transform: translateY(-2px);
+      transform: scale(1.05);
     }
 
-    .btn:disabled {
-      background-color: #7f8c8d;
-      cursor: not-allowed;
-      transform: none;
+    .hidden {
+      display: none !important;
     }
   </style>
 </head>
 <body>
 
-  <h1>🧀 치즈를 지켜라!</h1>
+  <div id="main-wrapper">
+    <div id="game-container">
+      <div id="hammer"></div>
 
-  <div class="game-container">
-    <div class="status-board">
-      <div class="status-item">남은 시간: <span id="time-display">30</span>초</div>
-      <div class="status-item">잡은 쥐: <span id="score-display">0</span>마리</div>
-      <div class="status-item">남은 치즈: <span id="cheese-display">🧀🧀🧀🧀🧀</span></div>
-    </div>
-
-    <div class="main-content">
-      <!-- 3x3 필드 -->
-      <div class="grid" id="game-grid">
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
-        <div class="hole"><div class="mouse"></div></div>
+      <div id="ui-bar">
+        <div>
+          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
+          <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
+        </div>
+        <div class="info-box">
+          점수: <span id="score-display">0</span>
+        </div>
+        <div class="info-box">
+          치즈: <span id="cheese-container"></span>
+        </div>
       </div>
 
-      <!-- 명예의 전당 및 최근 기록 -->
-      <div class="sidebar">
-        <div class="record-box">
-          <h3>🏆 명예의 전당 (TOP 3)</h3>
-          <ol class="record-list" id="hall-of-fame">
-            <li>기록 없음</li>
-          </ol>
-        </div>
+      <div class="grid-container">
+        <div class="hole" data-index="0"><div class="mouse"></div></div>
+        <div class="hole" data-index="1"><div class="mouse"></div></div>
+        <div class="hole" data-index="2"><div class="mouse"></div></div>
+        <div class="hole" data-index="3"><div class="mouse"></div></div>
+        <div class="hole" data-index="4"><div class="mouse"></div></div>
+        <div class="hole" data-index="5"><div class="mouse"></div></div>
+        <div class="hole" data-index="6"><div class="mouse"></div></div>
+        <div class="hole" data-index="7"><div class="mouse"></div></div>
+        <div class="hole" data-index="8"><div class="mouse"></div></div>
+      </div>
 
-        <div class="record-box">
-          <h3>🕒 최근 플레이 기록</h3>
-          <ul class="record-list" id="recent-records">
-            <li>기록 없음</li>
-          </ul>
+      <div id="overlay-screen" class="overlay">
+        <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
+        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
+        <div class="btn-group">
+          <button id="start-btn" class="btn">게임 시작</button>
+          <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
         </div>
       </div>
     </div>
 
-    <div class="controls">
-      <button id="start-btn" class="btn">게임 시작</button>
+    <div id="score-board">
+      <div class="board-section">
+        <h2>👑 명예의 전당 (TOP 3)</h2>
+        <ul id="top-list" class="record-list top-list">
+          <li style="text-align: center; color: #888;">기록 없음</li>
+        </ul>
+      </div>
+
+      <div class="board-section recent">
+        <h2>📜 최근 기록 (최대 20개)</h2>
+        <ul id="history-list" class="record-list">
+          <li style="text-align: center; color: #888;">기록 없음</li>
+        </ul>
+      </div>
     </div>
   </div>
 
   <script>
-    // --- Web Audio API 기반 효과음 시스템 ---
+    // --- Web Audio API 효과음 로직 ---
     let audioCtx = null;
 
     function initAudio() {
@@ -237,7 +322,6 @@
       }
     }
 
-    // 1. 휘두르기 소리 (Swing)
     function playSwingSound() {
       if (!audioCtx) return;
       const osc = audioCtx.createOscillator();
@@ -253,7 +337,6 @@
       osc.stop(audioCtx.currentTime + 0.1);
     }
 
-    // 2. 명중 타격음 (Hit)
     function playHitSound() {
       if (!audioCtx) return;
       const osc = audioCtx.createOscillator();
@@ -269,10 +352,9 @@
       osc.stop(audioCtx.currentTime + 0.15);
     }
 
-    // 3. 승리 효과음 (Win)
     function playWinSound() {
       if (!audioCtx) return;
-      const notes = [523.25, 659.25, 783.99, 1046.50]; // 도, 미, 솔, 높은 도
+      const notes = [523.25, 659.25, 783.99, 1046.50];
       notes.forEach((freq, idx) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -286,7 +368,6 @@
       });
     }
 
-    // 4. 패배 효과음 (Game Over)
     function playGameOverSound() {
       if (!audioCtx) return;
       const notes = [400, 350, 300, 220];
@@ -303,116 +384,144 @@
       });
     }
 
-    // --- 게임 상태 및 로직 변수 ---
+    // --- 게임 상태 변수 ---
     let score = 0;
-    let cheeseCount = 5;
     let timeRemaining = 30;
-    let isGameRunning = false;
-    let lastHole = null;
+    let cheeseCount = 3;
+    let gameTimeout = null;
+    let timerInterval = null;
     let isHit = false;
+    let isGameRunning = false;
 
-    let gameTimerId = null;
-    let popUpTimeoutId = null;
-    let popUpInterval = 1500; 
+    let popInterval = 1500;
+    let stayDuration = 1200;
 
-    // DOM 요소
-    const holes = document.querySelectorAll('.hole');
-    const mice = document.querySelectorAll('.mouse');
-    const grid = document.getElementById('game-grid');
-    const timeDisplay = document.getElementById('time-display');
+    let recentRecords = JSON.parse(localStorage.getItem('cheese_game_records')) || [];
+
+    const gameContainer = document.getElementById('game-container');
+    const hammer = document.getElementById('hammer');
     const scoreDisplay = document.getElementById('score-display');
-    const cheeseDisplay = document.getElementById('cheese-display');
+    const timeDisplay = document.getElementById('time-display');
+    const cheeseContainer = document.getElementById('cheese-container');
+    const speedIndicator = document.getElementById('speed-indicator');
+    const overlayScreen = document.getElementById('overlay-screen');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayDesc = document.getElementById('overlay-desc');
     const startBtn = document.getElementById('start-btn');
-    const hallOfFameList = document.getElementById('hall-of-fame');
-    const recentRecordsList = document.getElementById('recent-records');
+    const homeBtn = document.getElementById('home-btn');
+    const historyList = document.getElementById('history-list');
+    const topList = document.getElementById('top-list');
+    const holes = document.querySelectorAll('.hole');
 
-    // 초기화
-    renderRecords();
+    gameContainer.addEventListener('mousemove', (e) => {
+      const rect = gameContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    // 격자 판 클릭 시 휘두르기 효과음 재생
-    grid.addEventListener('mousedown', () => {
+      hammer.style.left = `${x - 40}px`;
+      hammer.style.top = `${y - 40}px`;
+      hammer.style.display = 'block';
+    });
+
+    gameContainer.addEventListener('mouseenter', () => {
+      hammer.style.display = 'block';
+    });
+
+    gameContainer.addEventListener('mouseleave', () => {
+      hammer.style.display = 'none';
+    });
+
+    gameContainer.addEventListener('mousedown', () => {
+      initAudio();
+      hammer.classList.add('hit');
       if (isGameRunning) {
-        initAudio();
         playSwingSound();
       }
     });
 
-    startBtn.addEventListener('click', startGame);
-
-    mice.forEach(mouse => {
-      mouse.addEventListener('mousedown', hitMouse);
+    gameContainer.addEventListener('mouseup', () => {
+      hammer.classList.remove('hit');
     });
 
-    function startGame() {
-      initAudio();
-      if (isGameRunning) return;
+    function updateCheeseUI() {
+      cheeseContainer.innerHTML = '';
+      for (let i = 0; i < cheeseCount; i++) {
+        const img = document.createElement('img');
+        img.src = 'cheese.png';
+        img.className = 'cheese-icon';
+        cheeseContainer.appendChild(img);
+      }
+    }
 
+    function resetGame() {
       score = 0;
-      cheeseCount = 5;
       timeRemaining = 30;
+      cheeseCount = 3;
       isGameRunning = true;
-      popUpInterval = 1500;
+
+      popInterval = 1500;
+      stayDuration = 1200;
+      speedIndicator.textContent = "단계: 1단계 (보통)";
+      speedIndicator.style.color = "#ffda79";
 
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeRemaining;
       updateCheeseUI();
 
-      startBtn.disabled = true;
+      holes.forEach(hole => {
+        const mouse = hole.querySelector('.mouse');
+        mouse.classList.remove('up');
+        mouse.dataset.clickable = "false";
+        mouse.style.backgroundImage = '';
+      });
+    }
 
-      gameTimerId = setInterval(() => {
-        timeRemaining--;
-        timeDisplay.textContent = timeRemaining;
-
-        adjustDifficulty();
-
-        if (timeRemaining <= 0) {
-          endGame(true);
-        }
-      }, 1000);
-
-      scheduleNextMouse();
+    function getRandomHole() {
+      const idx = Math.floor(Math.random() * holes.length);
+      return holes[idx];
     }
 
     function adjustDifficulty() {
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
-        popUpInterval = 1000;
+        popInterval = 1000;
+        speedIndicator.textContent = "단계: 3단계 (숙련 🔥)";
+        speedIndicator.style.color = "#ff5252";
       } else if (elapsed >= 10) {
-        popUpInterval = 1300;
-      } else {
-        popUpInterval = 1500;
+        popInterval = 1300;
+        speedIndicator.textContent = "단계: 2단계 (빠름 ⚡)";
+        speedIndicator.style.color = "#ffbe76";
       }
     }
 
-    function getRandomHole() {
-      const idx = Math.floor(Math.random() * holes.length);
-      const hole = holes[idx];
-      if (hole === lastHole) {
-        return getRandomHole();
-      }
-      lastHole = hole;
-      return hole;
+    function scheduleNextMouse() {
+      if (!isGameRunning) return;
+
+      gameTimeout = setTimeout(() => {
+        if (isGameRunning) {
+          popUpMouse();
+        }
+      }, popInterval);
     }
 
     function popUpMouse() {
-      if (!isGameRunning) return;
-
       const hole = getRandomHole();
       const mouse = hole.querySelector('.mouse');
       isHit = false;
 
+      // 확률형 머무르는 시간 설정
       let currentStayDuration = 1200;
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
         const rand = Math.random();
         if (rand < 0.1) {
-          currentStayDuration = 300;
+          currentStayDuration = 300; // 0.3초
         } else if (rand < 0.4) {
-          currentStayDuration = 450;
+          currentStayDuration = 450; // 0.45초
         } else {
-          currentStayDuration = 650;
+          currentStayDuration = 650; // 0.65초
         }
       } else if (elapsed >= 10) {
         currentStayDuration = (Math.random() < 0.25) ? 650 : 900;
@@ -444,119 +553,129 @@
       scheduleNextMouse();
     }
 
-    function scheduleNextMouse() {
-      if (!isGameRunning) return;
-      popUpTimeoutId = setTimeout(() => {
-        popUpMouse();
-      }, popUpInterval);
-    }
+    holes.forEach(hole => {
+      const mouse = hole.querySelector('.mouse');
+      mouse.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-    function hitMouse(e) {
-      if (!isGameRunning) return;
-      e.stopPropagation(); // 휘두르기 소리 중복 방지
+        if (!isGameRunning || isHit || mouse.dataset.clickable !== "true") return;
 
-      const mouse = e.target;
-
-      if (mouse.dataset.clickable === "true") {
         isHit = true;
-        playHitSound(); // 명중 타격음 재생
+        mouse.dataset.clickable = "false";
 
-        score++;
+        playHitSound();
+
+        score += 100;
         scoreDisplay.textContent = score;
 
-        mouse.dataset.clickable = "false";
         mouse.style.backgroundImage = "url('mouse_hit.png')";
 
         setTimeout(() => {
           mouse.classList.remove('up');
         }, 200);
+      });
+    });
+
+    function updateRecordUI() {
+      historyList.innerHTML = '';
+      if (recentRecords.length === 0) {
+        historyList.innerHTML = '<li style="text-align: center; color: #888;">기록 없음</li>';
       } else {
-        playSwingSound(); // 허공 타격 시 Swing 사운드
+        recentRecords.forEach((rec, idx) => {
+          const li = document.createElement('li');
+          if (rec.isSuccess) {
+            li.innerHTML = `<b>#${recentRecords.length - idx} 성공</b> - ${rec.finalScore}점<br><span class="bonus-text">(치즈 보너스: +${rec.bonusScore}점)</span>`;
+          } else {
+            li.innerHTML = `<b style="color:#ff5252;">#${recentRecords.length - idx} 실패</b> - 기록 없음`;
+          }
+          historyList.appendChild(li);
+        });
+      }
+
+      const successRecords = recentRecords.filter(r => r.isSuccess);
+      successRecords.sort((a, b) => b.finalScore - a.finalScore);
+      const top3 = successRecords.slice(0, 3);
+
+      topList.innerHTML = '';
+      if (top3.length === 0) {
+        topList.innerHTML = '<li style="text-align: center; color: #888;">기록 없음</li>';
+      } else {
+        top3.forEach((rec, idx) => {
+          const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
+          const li = document.createElement('li');
+          li.innerHTML = `<b>${medal} ${idx + 1}위</b>: ${rec.finalScore}점 <span class="bonus-text">(+${rec.bonusScore})</span>`;
+          topList.appendChild(li);
+        });
       }
     }
 
-    function updateCheeseUI() {
-      let cheeseStr = '';
-      for (let i = 0; i < cheeseCount; i++) {
-        cheeseStr += '🧀';
-      }
-      cheeseDisplay.textContent = cheeseStr || '없음';
+    function addScoreRecord(finalScore, bonusScore, isSuccess) {
+      recentRecords.unshift({ finalScore, bonusScore, isSuccess });
+      if (recentRecords.length > 20) recentRecords.pop();
+
+      localStorage.setItem('cheese_game_records', JSON.stringify(recentRecords));
+
+      updateRecordUI();
+    }
+
+    function startGame() {
+      initAudio();
+      resetGame();
+      overlayScreen.classList.add('hidden');
+
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        timeDisplay.textContent = timeRemaining;
+        adjustDifficulty();
+
+        if (timeRemaining <= 0) {
+          endGame(true);
+        }
+      }, 1000);
+
+      scheduleNextMouse();
     }
 
     function endGame(isSuccess) {
       isGameRunning = false;
-      clearInterval(gameTimerId);
-      clearTimeout(popUpTimeoutId);
+      clearTimeout(gameTimeout);
+      clearInterval(timerInterval);
 
-      mice.forEach(m => m.classList.remove('up'));
-      startBtn.disabled = false;
+      overlayScreen.classList.remove('hidden');
+      homeBtn.classList.remove('hidden');
 
-      if (isSuccess) {
+      if (isSuccess && cheeseCount > 0) {
         playWinSound();
-        setTimeout(() => {
-          alert(`🎉 축하합니다! 치즈를 성공적으로 지켰습니다!\n잡은 쥐: ${score}마리`);
-        }, 200);
+        const bonusScore = cheeseCount * 300;
+        const finalScore = score + bonusScore;
+        overlayTitle.textContent = "🎉 성공! 치즈를 지켜냈습니다!";
+        overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
+        startBtn.textContent = "다시 시작";
+        addScoreRecord(finalScore, bonusScore, true);
       } else {
         playGameOverSound();
-        setTimeout(() => {
-          alert(`💥 치즈를 모두 빼앗겼습니다! 게임 오버!\n잡은 쥐: ${score}마리`);
-        }, 200);
-      }
-
-      saveRecord(score, isSuccess);
-      renderRecords();
-    }
-
-    function saveRecord(score, isSuccess) {
-      const now = new Date();
-      const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      const newRecord = {
-        score: score,
-        isSuccess: isSuccess,
-        date: timeStr
-      };
-
-      let recent = JSON.parse(localStorage.getItem('cheese_recent')) || [];
-      recent.unshift(newRecord);
-      if (recent.length > 5) recent.pop();
-      localStorage.setItem('cheese_recent', JSON.stringify(recent));
-
-      if (isSuccess) {
-        let hof = JSON.parse(localStorage.getItem('cheese_hof')) || [];
-        hof.push(newRecord);
-        hof.sort((a, b) => b.score - a.score);
-        hof = hof.slice(0, 3);
-        localStorage.setItem('cheese_hof', JSON.stringify(hof));
+        overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
+        overlayDesc.textContent = "30초 동안 치즈를 지키지 못했습니다. 다시 도전해보세요!";
+        startBtn.textContent = "다시 시작";
+        addScoreRecord(0, 0, false);
       }
     }
 
-    function renderRecords() {
-      const hof = JSON.parse(localStorage.getItem('cheese_hof')) || [];
-      hallOfFameList.innerHTML = '';
-      if (hof.length === 0) {
-        hallOfFameList.innerHTML = '<li>기록 없음</li>';
-      } else {
-        hof.forEach((item, idx) => {
-          const li = document.createElement('li');
-          li.innerHTML = `<span>${idx + 1}위: ${item.score}마리</span> <small>${item.date}</small>`;
-          hallOfFameList.appendChild(li);
-        });
-      }
-
-      const recent = JSON.parse(localStorage.getItem('cheese_recent')) || [];
-      recentRecordsList.innerHTML = '';
-      if (recent.length === 0) {
-        recentRecordsList.innerHTML = '<li>기록 없음</li>';
-      } else {
-        recent.forEach(item => {
-          const li = document.createElement('li');
-          const resultText = item.isSuccess ? '성공' : '실패';
-          li.innerHTML = `<span>${item.score}마리 (${resultText})</span> <small>${item.date}</small>`;
-          recentRecordsList.appendChild(li);
-        });
-      }
+    function goHome() {
+      overlayTitle.textContent = "🧀 치즈를 지켜라!";
+      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!";
+      startBtn.textContent = "게임 시작";
+      homeBtn.classList.add('hidden');
+      resetGame();
+      isGameRunning = false;
     }
+
+    startBtn.addEventListener('click', startGame);
+    homeBtn.addEventListener('click', goHome);
+
+    updateCheeseUI();
+    updateRecordUI();
   </script>
 </body>
 </html>
