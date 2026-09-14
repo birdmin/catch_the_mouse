@@ -492,8 +492,21 @@
     let isGameRunning = false;
     let popInterval = 1500;
 
-    let topScores = JSON.parse(localStorage.getItem('cheese_top3')) || [];
-    let recentScores = JSON.parse(localStorage.getItem('cheese_recent20')) || [];
+    // 안전한 로컬스토리지 파싱 헬퍼 (T02-C24, C25 대응)
+    function safeLoadStorage(key, fallback = []) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : fallback;
+      } catch (e) {
+        console.warn(`Storage parse error for ${key}, falling back to default.`, e);
+        return fallback;
+      }
+    }
+
+    let topScores = safeLoadStorage('cheese_top3');
+    let recentScores = safeLoadStorage('cheese_recent20');
 
     const gameContainer = document.getElementById('game-container');
     const hammer = document.getElementById('hammer');
@@ -817,13 +830,21 @@
       topScores.push(recordData);
       topScores.sort((a, b) => b.finalScore - a.finalScore);
       topScores = topScores.slice(0, 3);
-      localStorage.setItem('cheese_top3', JSON.stringify(topScores));
+      try {
+        localStorage.setItem('cheese_top3', JSON.stringify(topScores));
+      } catch (e) {
+        console.warn('Storage save error (top3)', e);
+      }
 
       recentScores.unshift(recordData);
       if (recentScores.length > 20) {
         recentScores = recentScores.slice(0, 20);
       }
-      localStorage.setItem('cheese_recent20', JSON.stringify(recentScores));
+      try {
+        localStorage.setItem('cheese_recent20', JSON.stringify(recentScores));
+      } catch (e) {
+        console.warn('Storage save error (recent20)', e);
+      }
 
       updateSidebarUI();
 
