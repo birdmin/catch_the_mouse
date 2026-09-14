@@ -44,7 +44,7 @@
       flex-shrink: 0;
     }
 
-    /* 마우스 커서 망치 */
+    /* 마우스 커서 망치 (포인터 이벤트 완전 무시 설정) */
     #hammer {
       position: absolute;
       width: 80px;
@@ -53,7 +53,7 @@
       pointer-events: none;
       z-index: 100;
       transform-origin: 80% 80%;
-      transition: transform 0.05s ease-out;
+      transition: transform 0.04s ease-out;
       display: none;
     }
 
@@ -431,16 +431,21 @@
       hammer.style.display = 'none';
     });
 
-    // 어디를 누르든 망치가 숙여지고 Swing 소리가 나도록 연동
-    gameContainer.addEventListener('mousedown', () => {
+    // 🌟 글로벌 mousedown: 화면 어디를 누르든 망치가 100% 즉시 숙여짐!
+    window.addEventListener('mousedown', () => {
       initAudio();
+      
+      // 빠르게 연타해도 망치 애니메이션이 계속 적용되도록 클래스 리셋
+      hammer.classList.remove('hit');
+      void hammer.offsetWidth; // 리플로우 강제 트리거
       hammer.classList.add('hit');
+
       if (isGameRunning) {
         playSwingSound();
       }
     });
 
-    gameContainer.addEventListener('mouseup', () => {
+    window.addEventListener('mouseup', () => {
       hammer.classList.remove('hit');
     });
 
@@ -516,11 +521,11 @@
       if (elapsed >= 20) {
         const rand = Math.random();
         if (rand < 0.1) {
-          currentStayDuration = 300; // 0.3초
+          currentStayDuration = 300;
         } else if (rand < 0.4) {
-          currentStayDuration = 450; // 0.45초
+          currentStayDuration = 450;
         } else {
-          currentStayDuration = 650; // 0.65초
+          currentStayDuration = 650;
         }
       } else if (elapsed >= 10) {
         currentStayDuration = (Math.random() < 0.25) ? 650 : 900;
@@ -555,9 +560,6 @@
     holes.forEach(hole => {
       const mouse = hole.querySelector('.mouse');
       mouse.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        // e.stopPropagation() 제거 -> 이제 쥐를 클릭해도 부모(gameContainer)의 hammer.hit 이벤트를 정상 실행!
-
         if (!isGameRunning || isHit || mouse.dataset.clickable !== "true") return;
 
         isHit = true;
