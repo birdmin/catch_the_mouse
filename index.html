@@ -168,14 +168,13 @@
       gap: 10px;
     }
 
-    /* 쥐가 출몰하는 영역 (보라색 배경 제거 및 투명화) */
     .hole {
       position: relative;
       overflow: hidden;
       display: flex;
       justify-content: center;
       align-items: flex-end;
-      background: transparent; /* 배경을 투명하게 설정하여 background.png가 보임 */
+      background: transparent;
     }
 
     .mouse {
@@ -432,6 +431,7 @@
       hammer.style.display = 'none';
     });
 
+    // 어디를 누르든 망치가 숙여지고 Swing 소리가 나도록 연동
     gameContainer.addEventListener('mousedown', () => {
       initAudio();
       hammer.classList.add('hit');
@@ -510,7 +510,6 @@
       const mouse = hole.querySelector('.mouse');
       isHit = false;
 
-      // 3단계일 때 10% 확률로 0.3초 스피드 쥐 포함
       let currentStayDuration = 1200;
       const elapsed = 30 - timeRemaining;
 
@@ -557,7 +556,7 @@
       const mouse = hole.querySelector('.mouse');
       mouse.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        e.stopPropagation();
+        // e.stopPropagation() 제거 -> 이제 쥐를 클릭해도 부모(gameContainer)의 hammer.hit 이벤트를 정상 실행!
 
         if (!isGameRunning || isHit || mouse.dataset.clickable !== "true") return;
 
