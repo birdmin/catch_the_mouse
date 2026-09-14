@@ -22,9 +22,16 @@
       overflow-x: hidden;
     }
 
+    /* 게임 화면과 랭킹창을 옆으로 나란히 배치하는 메인 레이아웃 */
+    #main-wrapper {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
     #game-container {
       position: relative;
-      width: 960px;
+      width: 800px;
       height: 540px;
       background: url('background.png') no-repeat center/cover;
       border: 4px solid #444;
@@ -32,6 +39,49 @@
       overflow: hidden;
       cursor: none;
     }
+
+    /* 우측 사이드 랭킹 패널 */
+    #side-leaderboard {
+      width: 240px;
+      height: 540px;
+      background: #2a2a2a;
+      border: 4px solid #444;
+      border-radius: 12px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #side-leaderboard h2 {
+      margin: 0 0 15px 0;
+      font-size: 20px;
+      color: #ffda79;
+      text-align: center;
+      border-bottom: 2px solid #444;
+      padding-bottom: 10px;
+    }
+
+    #leaderboard-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    #leaderboard-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 8px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 218, 121, 0.2);
+    }
+
+    #leaderboard-list li:nth-child(1) { color: #ffd700; border-color: #ffd700; font-weight: bold; }
+    #leaderboard-list li:nth-child(2) { color: #c0c0c0; }
+    #leaderboard-list li:nth-child(3) { color: #cd7f32; }
 
     #hammer {
       position: absolute;
@@ -63,7 +113,7 @@
     }
 
     .info-box {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
       display: flex;
       align-items: center;
@@ -71,12 +121,12 @@
     }
 
     .cheese-icon {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
     }
 
     #game-rule {
-      font-size: 14px;
+      font-size: 13px;
       color: #ffda79;
     }
 
@@ -86,7 +136,7 @@
       color: #ffda79;
       padding: 4px 8px;
       border-radius: 6px;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       transition: background 0.2s;
       white-space: nowrap;
@@ -98,10 +148,10 @@
 
     .grid-container {
       position: absolute;
-      top: 140px;
-      left: 180px;
+      top: 130px;
+      left: 100px;
       width: 600px;
-      height: 340px;
+      height: 350px;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
@@ -139,7 +189,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.88);
+      background: rgba(0, 0, 0, 0.85);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -149,50 +199,16 @@
     }
 
     .overlay h1 {
-      font-size: 34px;
-      margin-bottom: 8px;
+      font-size: 36px;
+      margin-bottom: 12px;
       color: #ffda79;
     }
 
     .overlay p {
-      font-size: 16px;
-      margin-bottom: 15px;
+      font-size: 18px;
+      margin-bottom: 25px;
       text-align: center;
-      line-height: 1.4;
-    }
-
-    #leaderboard-box {
-      width: 320px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 218, 121, 0.4);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-    }
-
-    #leaderboard-box h3 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      color: #ffda79;
-      text-align: center;
-    }
-
-    #leaderboard-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      font-size: 14px;
-    }
-
-    #leaderboard-list li {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    #leaderboard-list li:last-child {
-      border-bottom: none;
+      line-height: 1.5;
     }
 
     .btn-group {
@@ -201,8 +217,8 @@
     }
 
     .btn {
-      padding: 10px 24px;
-      font-size: 16px;
+      padding: 12px 28px;
+      font-size: 18px;
       font-weight: bold;
       color: #1a1a1a;
       background-color: #ffda79;
@@ -230,52 +246,56 @@
 
   <audio id="bgm" src="bgm.mp3" loop></audio>
 
-  <div id="game-container">
-    <div id="hammer"></div>
+  <div id="main-wrapper">
+    <!-- 메인 게임 영역 -->
+    <div id="game-container">
+      <div id="hammer"></div>
 
-    <div id="ui-bar">
-      <div>
-        <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! (⚡ 빠른 쥐는 200점!)</div>
-        <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
+      <div id="ui-bar">
+        <div>
+          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! (⚡ 빠른 쥐는 200점!)</div>
+          <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
+        </div>
+        <div class="info-box">
+          점수: <span id="score-display">0</span>
+        </div>
+        <div class="info-box">
+          치즈: <span id="cheese-container"></span>
+          <button id="bgm-btn" class="audio-btn">🎵 BGM ON</button>
+          <button id="sfx-btn" class="audio-btn">🔊 SFX ON</button>
+        </div>
       </div>
-      <div class="info-box">
-        점수: <span id="score-display">0</span>
+
+      <div class="grid-container">
+        <div class="hole" data-index="0"><div class="mouse"></div></div>
+        <div class="hole" data-index="1"><div class="mouse"></div></div>
+        <div class="hole" data-index="2"><div class="mouse"></div></div>
+        <div class="hole" data-index="3"><div class="mouse"></div></div>
+        <div class="hole" data-index="4"><div class="mouse"></div></div>
+        <div class="hole" data-index="5"><div class="mouse"></div></div>
+        <div class="hole" data-index="6"><div class="mouse"></div></div>
+        <div class="hole" data-index="7"><div class="mouse"></div></div>
+        <div class="hole" data-index="8"><div class="mouse"></div></div>
       </div>
-      <div class="info-box">
-        치즈: <span id="cheese-container"></span>
-        <button id="bgm-btn" class="audio-btn">🎵 BGM ON</button>
-        <button id="sfx-btn" class="audio-btn">🔊 SFX ON</button>
+
+      <!-- 안내 및 시작/결과 화면 -->
+      <div id="overlay-screen" class="overlay">
+        <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
+        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
+
+        <div class="btn-group">
+          <button id="start-btn" class="btn">게임 시작</button>
+          <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
+        </div>
       </div>
     </div>
 
-    <div class="grid-container">
-      <div class="hole" data-index="0"><div class="mouse"></div></div>
-      <div class="hole" data-index="1"><div class="mouse"></div></div>
-      <div class="hole" data-index="2"><div class="mouse"></div></div>
-      <div class="hole" data-index="3"><div class="mouse"></div></div>
-      <div class="hole" data-index="4"><div class="mouse"></div></div>
-      <div class="hole" data-index="5"><div class="mouse"></div></div>
-      <div class="hole" data-index="6"><div class="mouse"></div></div>
-      <div class="hole" data-index="7"><div class="mouse"></div></div>
-      <div class="hole" data-index="8"><div class="mouse"></div></div>
-    </div>
-
-    <div id="overlay-screen" class="overlay">
-      <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
-      <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
-      
-      <!-- TOP 3 랭킹 출력 영역 -->
-      <div id="leaderboard-box">
-        <h3>🏆 TOP 3 기록</h3>
-        <ol id="leaderboard-list">
-          <li><span>기록 없음</span><span>-</span></li>
-        </ol>
-      </div>
-
-      <div class="btn-group">
-        <button id="start-btn" class="btn">게임 시작</button>
-        <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
-      </div>
+    <!-- 우측 독립 랭킹 패널 -->
+    <div id="side-leaderboard">
+      <h2>🏆 TOP 3 랭킹</h2>
+      <ol id="leaderboard-list">
+        <li><span>기록 없음</span><span>-</span></li>
+      </ol>
     </div>
   </div>
 
@@ -393,7 +413,7 @@
       const dateStr = new Date().toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
       scores.push({ score: newScore, date: dateStr });
       scores.sort((a, b) => b.score - a.score);
-      const top3 = scores.slice(0, 3); // 상위 3개만 잘라서 저장
+      const top3 = scores.slice(0, 3);
       localStorage.setItem('cheeseGameScores', JSON.stringify(top3));
     }
 
