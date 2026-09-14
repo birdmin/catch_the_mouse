@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>치즈를 지켜라! - 쥐 잡기 게임</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #1a1a1a;
+      color: #ffffff;
+      font-family: 'Pretendard', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* 게임 컨테이너 (16:9 비율 배경 기준) */
+    #game-container {
+      position: relative;
+      width: 960px;
+      height: 540px;
+      background: url('background.png') no-repeat center/cover;
+      border: 4px solid #444;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: url('hammer.png') 32 32, auto; /* 망치 커서 적용 */
+    }
+
+    /* 상단 정보 UI 바 (규칙 및 상태 표시 - T02-C03, C04, C05) */
+    #ui-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .info-box {
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cheese-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    #game-rule {
+      font-size: 14px;
+      color: #ffda79;
+    }
+
+    /* 3x3 구멍 위치 설정 (배경 구멍 오버레이) */
+    .grid-container {
+      position: absolute;
+      top: 140px;
+      left: 180px;
+      width: 600px;
+      height: 340px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .hole {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .mouse {
+      position: absolute;
+      bottom: -100%;
+      width: 110px;
+      height: 110px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      transition: bottom 0.15s ease-out;
+      cursor: pointer;
+    }
+
+    .mouse.up {
+      bottom: 10px;
+    }
+
+    /* 게임 시작 / 결과 오버레이 화면 */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .overlay h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+      color: #ffda79;
+    }
+
+    .overlay p {
+      font-size: 18px;
+      margin-bottom: 25px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .btn {
+      padding: 12px 28px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #1a1a1a;
+      background-color: #ffda79;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #f1c40f;
+      transform: scale(1.05);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- UI 정보 표시 영역 -->
+    <div id="ui-bar">
+      <div>
+        <div id="game-rule">🎮 조작: 쥐를 클릭해 치즈를 지키세요!</div>
+        <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
+      </div>
+      <div class="info-box">
+        점수: <span id="score-display">0</span>
+      </div>
+      <div class="info-box">
+        치즈: <span id="cheese-container"></span>
+      </div>
+    </div>
+
+    <!-- 3x3 구멍 영역 -->
+    <div class="grid-container">
+      <div class="hole" data-index="0"><div class="mouse"></div></div>
+      <div class="hole" data-index="1"><div class="mouse"></div></div>
+      <div class="hole" data-index="2"><div class="mouse"></div></div>
+      <div class="hole" data-index="3"><div class="mouse"></div></div>
+      <div class="hole" data-index="4"><div class="mouse"></div></div>
+      <div class="hole" data-index="5"><div class="mouse"></div></div>
+      <div class="hole" data-index="6"><div class="mouse"></div></div>
+      <div class="hole" data-index="7"><div class="mouse"></div></div>
+      <div class="hole" data-index="8"><div class="mouse"></div></div>
+    </div>
+
+    <!-- 스타트 / 결과 화면 (시작, 성공, 실패, 재시작 처리) -->
+    <div id="overlay-screen" class="overlay">
+      <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
+      <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈가 모두 사라지면 실패합니다!</p>
+      <button id="start-btn" class="btn">게임 시작</button>
+    </div>
+  </div>
+
+  <script>
+    // 게임 상태 변수
+    let score = 0;
+    let timeRemaining = 30;
+    let cheeseCount = 3;
+    let gameInterval = null;
+    let timerInterval = null;
+    let activeHole = null;
+    let isHit = false;
+    let isGameRunning = false;
+
+    // DOM 요소
+    const scoreDisplay = document.getElementById('score-display');
+    const timeDisplay = document.getElementById('time-display');
+    const cheeseContainer = document.getElementById('cheese-container');
+    const overlayScreen = document.getElementById('overlay-screen');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayDesc = document.getElementById('overlay-desc');
+    const startBtn = document.getElementById('start-btn');
+    const holes = document.querySelectorAll('.hole');
+
+    // 치즈 UI 갱신 함수
+    function updateCheeseUI() {
+      cheeseContainer.innerHTML = '';
+      for (let i = 0; i < cheeseCount; i++) {
+        const img = document.createElement('img');
+        img.src = 'cheese.png';
+        img.className = 'cheese-icon';
+        cheeseContainer.appendChild(img);
+      }
+    }
+
+    // 초기 상태 리셋 (T02-C08, T02-C09 재시작 초기화 기준)
+    function resetGame() {
+      score = 0;
+      timeRemaining = 30;
+      cheeseCount = 3;
+      isGameRunning = true;
+      scoreDisplay.textContent = score;
+      timeDisplay.textContent = timeRemaining;
+      updateCheeseUI();
+
+      // 기존 남아있던 쥐 제거
+      holes.forEach(hole => {
+        const mouse = hole.querySelector('.mouse');
+        mouse.classList.remove('up');
+        mouse.style.backgroundImage = '';
+      });
+    }
+
+    // 무작위 구멍 선택
+    function getRandomHole() {
+      const idx = Math.floor(Math.random() * holes.length);
+      return holes[idx];
+    }
+
+    // 쥐 등장 처리
+    function popUpMouse() {
+      if (!isGameRunning) return;
+
+      const hole = getRandomHole();
+      const mouse = hole.querySelector('.mouse');
+      activeHole = hole;
+      isHit = false;
+
+      mouse.style.backgroundImage = "url('mouse_popup.png')";
+      mouse.classList.add('up');
+
+      // 1초 뒤 사라짐 검사
+      setTimeout(() => {
+        if (mouse.classList.contains('up')) {
+          mouse.classList.remove('up');
+
+          // 잡지 못하고 놓쳤을 때 (치즈 차감)
+          if (!isHit && isGameRunning) {
+            cheeseCount--;
+            updateCheeseUI();
+
+            // 치즈가 0개가 되면 즉시 실패 (T02-C07)
+            if (cheeseCount <= 0) {
+              endGame(false);
+            }
+          }
+        }
+      }, 1000);
+    }
+
+    // 쥐 클릭(타격) 이벤트 (T02-C06 1회 클릭 = 1회 반영)
+    holes.forEach(hole => {
+      const mouse = hole.querySelector('.mouse');
+      mouse.addEventListener('click', () => {
+        if (!isGameRunning || isHit || !mouse.classList.contains('up')) return;
+
+        isHit = true;
+        score += 100; // 기본 점수 100점
+        scoreDisplay.textContent = score;
+
+        // 맞은 이미지로 교체
+        mouse.style.backgroundImage = "url('mouse_hit.png')";
+
+        setTimeout(() => {
+          mouse.classList.remove('up');
+        }, 300);
+      });
+    });
+
+    // 게임 시작
+    function startGame() {
+      resetGame();
+      overlayScreen.classList.add('hidden');
+
+      // 타이머 시작 (1초 마다)
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        timeDisplay.textContent = timeRemaining;
+
+        if (timeRemaining <= 0) {
+          endGame(true); // 30초 생존 성공
+        }
+      }, 1000);
+
+      // 쥐 등장 주기 (1.2초 마다)
+      gameInterval = setInterval(() => {
+        popUpMouse();
+      }, 1200);
+    }
+
+    // 게임 종료 (성공 / 실패)
+    function endGame(isSuccess) {
+      isGameRunning = false;
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+
+      overlayScreen.classList.remove('hidden');
+
+      if (isSuccess && cheeseCount > 0) {
+        // 보너스 점수 계산 (남은 치즈당 500점)
+        const bonusScore = cheeseCount * 500;
+        const finalScore = score + bonusScore;
+        overlayTitle.textContent = "🎉 성공! 치즈를 지켜냈습니다!";
+        overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
+      } else {
+        overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
+        overlayDesc.textContent = "30초 동안 치즈를 지키지 못했습니다. 다시 도전해보세요!";
+      }
+
+      startBtn.textContent = "다시 시작";
+    }
+
+    // 이벤트 리스너
+    startBtn.addEventListener('click', startGame);
+
+    // 최초 UI 설정
+    updateCheeseUI();
+  </script>
+</body>
+</html>
