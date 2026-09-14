@@ -166,7 +166,7 @@
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      transition: bottom 0.12s ease-out;
+      transition: bottom 0.15s ease-out;
       cursor: pointer;
     }
 
@@ -238,7 +238,7 @@
     <div id="game-container">
       <div id="ui-bar">
         <div>
-          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 보통</span></div>
+          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
           <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
         </div>
         <div class="info-box">
@@ -263,7 +263,7 @@
 
       <div id="overlay-screen" class="overlay">
         <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
-        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 더 빠르게 튀어나옵니다!</p>
+        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 조금씩 더 빠르게 튀어나옵니다!</p>
         <div class="btn-group">
           <button id="start-btn" class="btn">게임 시작</button>
           <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
@@ -298,9 +298,9 @@
     let isGameRunning = false;
     let isPaused = false;
     
-    // 난이도 가속 파라미터
-    let popInterval = 1200; // 쥐 등장 주기 (ms)
-    let stayDuration = 1000; // 쥐 체류 시간 (ms)
+    // 완화된 난이도 파라미터
+    let popInterval = 1300;
+    let stayDuration = 1100;
 
     let recentRecords = [];
 
@@ -334,8 +334,8 @@
       isGameRunning = true;
       isPaused = false;
       
-      popInterval = 1200;
-      stayDuration = 1000;
+      popInterval = 1300;
+      stayDuration = 1100;
       speedIndicator.textContent = "단계: 1단계 (보통)";
       speedIndicator.style.color = "#ffda79";
 
@@ -356,20 +356,19 @@
       return holes[idx];
     }
 
-    // 시간대별 난이도 조절 함수 (10초 단위)
     function adjustDifficulty() {
       const elapsed = 30 - timeRemaining;
       
       if (elapsed >= 20) {
-        // 20~30초 (3단계: 광란)
-        popInterval = 650;
-        stayDuration = 550;
-        speedIndicator.textContent = "단계: 3단계 (광란 🔥)";
+        // 20~30초 (3단계: 숙련)
+        popInterval = 800;
+        stayDuration = 650;
+        speedIndicator.textContent = "단계: 3단계 (숙련 🔥)";
         speedIndicator.style.color = "#ff5252";
       } else if (elapsed >= 10) {
-        // 10~20초 (2단계: 가속)
-        popInterval = 900;
-        stayDuration = 750;
+        // 10~20초 (2단계: 빠름)
+        popInterval = 1000;
+        stayDuration = 850;
         speedIndicator.textContent = "단계: 2단계 (빠름 ⚡)";
         speedIndicator.style.color = "#ffbe76";
       }
@@ -517,7 +516,7 @@
 
     function goHome() {
       overlayTitle.textContent = "🧀 치즈를 지켜라!";
-      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 더 빠르게 튀어나옵니다!";
+      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 조금씩 더 빠르게 튀어나옵니다!";
       startBtn.textContent = "게임 시작";
       homeBtn.classList.add('hidden');
       resetGame();
