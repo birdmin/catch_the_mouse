@@ -254,7 +254,7 @@
     let isBgmMuted = false;
     let isSfxMuted = false;
 
-    bgmAudio.volume = 0.3; // 배경음악 볼륨 조정 (30%)
+    bgmAudio.volume = 0.3; // 배경음악 볼륨 (30%)
 
     bgmBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -391,7 +391,7 @@
 
     window.addEventListener('mousedown', () => {
       initAudio();
-      
+
       hammer.classList.remove('hit');
       void hammer.offsetWidth; 
       hammer.classList.add('hit');
@@ -475,17 +475,18 @@
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
+        // 3단계: 0.3초 패턴 제거 (0.45초 40%, 0.65초 60%)
         const rand = Math.random();
-        if (rand < 0.1) {
-          currentStayDuration = 300;
-        } else if (rand < 0.4) {
+        if (rand < 0.4) {
           currentStayDuration = 450;
         } else {
           currentStayDuration = 650;
         }
       } else if (elapsed >= 10) {
+        // 2단계
         currentStayDuration = (Math.random() < 0.25) ? 650 : 900;
       } else {
+        // 1단계
         currentStayDuration = 1200;
       }
 
@@ -536,7 +537,7 @@
 
     function startGame() {
       initAudio();
-      
+
       if (!isBgmMuted) {
         bgmAudio.currentTime = 0;
         bgmAudio.play().catch(e => console.log("BGM 자동 재생 차단됨:", e));
