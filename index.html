@@ -39,11 +39,11 @@
       border: 4px solid #444;
       border-radius: 12px;
       overflow: hidden;
-      cursor: none; /* 기본 커서 숨김 */
+      cursor: none; /* 기본 마우스 커서 숨김 */
       flex-shrink: 0;
     }
 
-    /* 마우스 추적 망치 이미지 */
+    /* 커서 추적 망치 (흰 배경 투과 적용) */
     #hammer {
       position: absolute;
       width: 80px;
@@ -51,9 +51,10 @@
       background: url('hammer.png') no-repeat center/contain;
       pointer-events: none; /* 클릭 이벤트 통과 */
       z-index: 100;
-      transform-origin: 80% 80%; /* 망치 손잡이 기준 회전 */
+      transform-origin: 80% 80%; /* 손잡이 축 기준 회전 */
       transition: transform 0.05s ease-out;
       display: none;
+      mix-blend-mode: multiply; /* 이미지의 흰색 배경 제거 효과 */
     }
 
     #hammer.hit {
@@ -138,9 +139,11 @@
       gap: 8px;
     }
 
+    /* 치즈 아이콘 (흰 배경 투과 적용) */
     .cheese-icon {
       width: 24px;
       height: 24px;
+      mix-blend-mode: multiply; /* 흰색 배경 제거 효과 */
     }
 
     #game-rule {
@@ -283,7 +286,7 @@
 
       <div id="overlay-screen" class="overlay">
         <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
-        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 5개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
+        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
         <div class="btn-group">
           <button id="start-btn" class="btn">게임 시작</button>
           <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
@@ -311,7 +314,7 @@
   <script>
     let score = 0;
     let timeRemaining = 30;
-    let cheeseCount = 5; // 치즈 기본값 5개
+    let cheeseCount = 3; // 기본 치즈 개수 3개로 변경
     let gameTimeout = null;
     let timerInterval = null;
     let isHit = false;
@@ -378,7 +381,7 @@
     function resetGame() {
       score = 0;
       timeRemaining = 30;
-      cheeseCount = 5; // 리셋 시 치즈 5개 재설정
+      cheeseCount = 3; // 리셋 시 치즈 3개 재설정
       isGameRunning = true;
 
       popInterval = 1500;
@@ -515,7 +518,6 @@
       resetGame();
       overlayScreen.classList.add('hidden');
 
-      // 탭 전환 시에도 정지하지 않고 계속 진행
       timerInterval = setInterval(() => {
         timeRemaining--;
         timeDisplay.textContent = timeRemaining;
@@ -554,7 +556,7 @@
 
     function goHome() {
       overlayTitle.textContent = "🧀 치즈를 지켜라!";
-      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 5개를 모두 빼앗기지 않고 지켜내야 합니다!";
+      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!";
       startBtn.textContent = "게임 시작";
       homeBtn.classList.add('hidden');
       resetGame();
