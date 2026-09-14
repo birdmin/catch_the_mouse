@@ -31,7 +31,6 @@
       justify-content: center;
     }
 
-    /* 사용자 배경 이미지 삽입 */
     #game-container {
       position: relative;
       width: 960px;
@@ -44,7 +43,6 @@
       flex-shrink: 0;
     }
 
-    /* 마우스 커서 망치 (포인터 이벤트 완전 무시 설정) */
     #hammer {
       position: absolute;
       width: 80px;
@@ -156,6 +154,22 @@
       font-weight: bold;
     }
 
+    /* BGM 토글 버튼 스타일 */
+    #bgm-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid #ffda79;
+      color: #ffda79;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #bgm-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
     .grid-container {
       position: absolute;
       top: 140px;
@@ -251,8 +265,15 @@
       display: none !important;
     }
   </style>
+
+  <!-- 🔥 Firebase SDK 불러오기 -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
+
+  <!-- 오디오 태그 (같은 폴더의 bgm.mp3 사용) -->
+  <audio id="bgm" src="bgm.mp3" loop></audio>
 
   <div id="main-wrapper">
     <div id="game-container">
@@ -268,6 +289,7 @@
         </div>
         <div class="info-box">
           치즈: <span id="cheese-container"></span>
+          <button id="bgm-btn">🎵 BGM ON</button>
         </div>
       </div>
 
@@ -295,23 +317,57 @@
 
     <div id="score-board">
       <div class="board-section">
-        <h2>👑 명예의 전당 (TOP 3)</h2>
+        <h2>👑 실시간 통합 TOP 3</h2>
         <ul id="top-list" class="record-list top-list">
-          <li style="text-align: center; color: #888;">기록 없음</li>
+          <li style="text-align: center; color: #888;">기록 불러오는 중...</li>
         </ul>
       </div>
 
       <div class="board-section recent">
-        <h2>📜 최근 기록 (최대 20개)</h2>
+        <h2>📜 전체 실시간 기록 (최근 20개)</h2>
         <ul id="history-list" class="record-list">
-          <li style="text-align: center; color: #888;">기록 없음</li>
+          <li style="text-align: center; color: #888;">기록 불러오는 중...</li>
         </ul>
       </div>
     </div>
   </div>
 
   <script>
-    // --- Web Audio API 효과음 로직 ---
+    // -------------------------------------------------------------
+    // 🔥 Firebase 키 설정
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const recordsRef = database.ref('game_records');
+
+    // --- Audio 객체 및 BGM 제어 ---
+    const bgmAudio = document.getElementById('bgm');
+    const bgmBtn = document.getElementById('bgm-btn');
+    let isBgmMuted = false;
+    bgmAudio.volume = 0.3; // 배경음악 볼륨 조정 (30%)
+
+    bgmBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 망치 찍기 방지
+      isBgmMuted = !isBgmMuted;
+      if (isBgmMuted) {
+        bgmAudio.pause();
+        bgmBtn.textContent = '🔇 BGM OFF';
+      } else {
+        if (isGameRunning) bgmAudio.play();
+        bgmBtn.textContent = '🎵 BGM ON';
+      }
+    });
+
     let audioCtx = null;
 
     function initAudio() {
@@ -396,8 +452,6 @@
 
     let popInterval = 1500;
 
-    let recentRecords = JSON.parse(localStorage.getItem('cheese_game_records')) || [];
-
     const gameContainer = document.getElementById('game-container');
     const hammer = document.getElementById('hammer');
     const scoreDisplay = document.getElementById('score-display');
@@ -431,13 +485,11 @@
       hammer.style.display = 'none';
     });
 
-    // 🌟 글로벌 mousedown: 화면 어디를 누르든 망치가 100% 즉시 숙여짐!
     window.addEventListener('mousedown', () => {
       initAudio();
       
-      // 빠르게 연타해도 망치 애니메이션이 계속 적용되도록 클래스 리셋
       hammer.classList.remove('hit');
-      void hammer.offsetWidth; // 리플로우 강제 트리거
+      void hammer.offsetWidth; 
       hammer.classList.add('hit');
 
       if (isGameRunning) {
@@ -578,23 +630,35 @@
       });
     });
 
-    function updateRecordUI() {
+    recordsRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      const recordArray = [];
+
+      if (data) {
+        Object.keys(data).forEach(key => {
+          recordArray.push(data[key]);
+        });
+      }
+
+      recordArray.sort((a, b) => b.timestamp - a.timestamp);
+
       historyList.innerHTML = '';
-      if (recentRecords.length === 0) {
+      if (recordArray.length === 0) {
         historyList.innerHTML = '<li style="text-align: center; color: #888;">기록 없음</li>';
       } else {
-        recentRecords.forEach((rec, idx) => {
+        const recent20 = recordArray.slice(0, 20);
+        recent20.forEach((rec, idx) => {
           const li = document.createElement('li');
           if (rec.isSuccess) {
-            li.innerHTML = `<b>#${recentRecords.length - idx} 성공</b> - ${rec.finalScore}점<br><span class="bonus-text">(치즈 보너스: +${rec.bonusScore}점)</span>`;
+            li.innerHTML = `<b>성공</b> - ${rec.finalScore}점<br><span class="bonus-text">(치즈 보너스: +${rec.bonusScore}점)</span>`;
           } else {
-            li.innerHTML = `<b style="color:#ff5252;">#${recentRecords.length - idx} 실패</b> - 기록 없음`;
+            li.innerHTML = `<b style="color:#ff5252;">실패</b> - 기록 없음`;
           }
           historyList.appendChild(li);
         });
       }
 
-      const successRecords = recentRecords.filter(r => r.isSuccess);
+      const successRecords = recordArray.filter(r => r.isSuccess);
       successRecords.sort((a, b) => b.finalScore - a.finalScore);
       const top3 = successRecords.slice(0, 3);
 
@@ -609,19 +673,26 @@
           topList.appendChild(li);
         });
       }
-    }
+    });
 
     function addScoreRecord(finalScore, bonusScore, isSuccess) {
-      recentRecords.unshift({ finalScore, bonusScore, isSuccess });
-      if (recentRecords.length > 20) recentRecords.pop();
-
-      localStorage.setItem('cheese_game_records', JSON.stringify(recentRecords));
-
-      updateRecordUI();
+      recordsRef.push({
+        finalScore: finalScore,
+        bonusScore: bonusScore,
+        isSuccess: isSuccess,
+        timestamp: Date.now()
+      });
     }
 
     function startGame() {
       initAudio();
+      
+      // BGM 재생 시작
+      if (!isBgmMuted) {
+        bgmAudio.currentTime = 0;
+        bgmAudio.play().catch(e => console.log("BGM 자동 재생 차단됨:", e));
+      }
+
       resetGame();
       overlayScreen.classList.add('hidden');
 
@@ -642,6 +713,9 @@
       isGameRunning = false;
       clearTimeout(gameTimeout);
       clearInterval(timerInterval);
+
+      // BGM 정지
+      bgmAudio.pause();
 
       overlayScreen.classList.remove('hidden');
       homeBtn.classList.remove('hidden');
@@ -670,13 +744,13 @@
       homeBtn.classList.add('hidden');
       resetGame();
       isGameRunning = false;
+      bgmAudio.pause();
     }
 
     startBtn.addEventListener('click', startGame);
     homeBtn.addEventListener('click', goHome);
 
     updateCheeseUI();
-    updateRecordUI();
   </script>
 </body>
 </html>
