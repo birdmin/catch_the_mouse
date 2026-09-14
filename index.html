@@ -39,8 +39,25 @@
       border: 4px solid #444;
       border-radius: 12px;
       overflow: hidden;
-      cursor: url('hammer.png') 32 32, auto;
+      cursor: none; /* 기본 커서 숨김 */
       flex-shrink: 0;
+    }
+
+    /* custom 망치 엘리먼트 */
+    #hammer {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background: url('hammer.png') no-repeat center/contain;
+      pointer-events: none; /* 클릭 이벤트 통과 */
+      z-index: 100;
+      transform-origin: bottom right; /* 망치 손잡이 기준 회전 */
+      transition: transform 0.05s ease-out;
+      display: none;
+    }
+
+    #hammer.hit {
+      transform: rotate(-45deg); /* 타격 시 회전 */
     }
 
     #score-board {
@@ -122,8 +139,8 @@
     }
 
     .cheese-icon {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
     }
 
     #game-rule {
@@ -167,7 +184,7 @@
       background-repeat: no-repeat;
       background-position: center;
       transition: bottom 0.15s ease-out;
-      cursor: pointer;
+      cursor: none;
     }
 
     .mouse.up {
@@ -186,6 +203,7 @@
       justify-content: center;
       align-items: center;
       z-index: 20;
+      cursor: auto;
     }
 
     .overlay h1 {
@@ -236,6 +254,8 @@
 
   <div id="main-wrapper">
     <div id="game-container">
+      <div id="hammer"></div>
+
       <div id="ui-bar">
         <div>
           <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
@@ -263,7 +283,7 @@
 
       <div id="overlay-screen" class="overlay">
         <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
-        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 조금씩 더 빠르게 튀어나옵니다!</p>
+        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 5개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
         <div class="btn-group">
           <button id="start-btn" class="btn">게임 시작</button>
           <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
@@ -291,19 +311,20 @@
   <script>
     let score = 0;
     let timeRemaining = 30;
-    let cheeseCount = 3;
+    let cheeseCount = 5;
     let gameTimeout = null;
     let timerInterval = null;
     let isHit = false;
     let isGameRunning = false;
     let isPaused = false;
     
-    // 추가 완화된 난이도 파라미터
     let popInterval = 1500;
     let stayDuration = 1200;
 
     let recentRecords = [];
 
+    const gameContainer = document.getElementById('game-container');
+    const hammer = document.getElementById('hammer');
     const scoreDisplay = document.getElementById('score-display');
     const timeDisplay = document.getElementById('time-display');
     const cheeseContainer = document.getElementById('cheese-container');
@@ -316,6 +337,30 @@
     const historyList = document.getElementById('history-list');
     const topList = document.getElementById('top-list');
     const holes = document.querySelectorAll('.hole');
+
+    // 망치 이동 추적 연출
+    gameContainer.addEventListener('mousemove', (e) => {
+      const rect = gameContainer.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      hammer.style.left = `${x - 40}px`;
+      hammer.style.top = `${y - 40}px`;
+      hammer.style.display = 'block';
+    });
+
+    gameContainer.addEventListener('mouseleave', () => {
+      hammer.style.display = 'none';
+    });
+
+    // 클릭 타격 애니메이션
+    gameContainer.addEventListener('mousedown', () => {
+      hammer.classList.add('hit');
+    });
+
+    gameContainer.addEventListener('mouseup', () => {
+      hammer.classList.remove('hit');
+    });
 
     function updateCheeseUI() {
       cheeseContainer.innerHTML = '';
@@ -330,7 +375,7 @@
     function resetGame() {
       score = 0;
       timeRemaining = 30;
-      cheeseCount = 3;
+      cheeseCount = 5;
       isGameRunning = true;
       isPaused = false;
       
@@ -360,15 +405,13 @@
       const elapsed = 30 - timeRemaining;
       
       if (elapsed >= 20) {
-        // 20~30초 (3단계: 숙련)
-        popInterval = 950;
-        stayDuration = 750;
+        popInterval = 1100;
+        stayDuration = 900;
         speedIndicator.textContent = "단계: 3단계 (숙련 🔥)";
         speedIndicator.style.color = "#ff5252";
       } else if (elapsed >= 10) {
-        // 10~20초 (2단계: 빠름)
-        popInterval = 1200;
-        stayDuration = 950;
+        popInterval = 1300;
+        stayDuration = 1050;
         speedIndicator.textContent = "단계: 2단계 (빠름 ⚡)";
         speedIndicator.style.color = "#ffbe76";
       }
@@ -417,7 +460,7 @@
 
     holes.forEach(hole => {
       const mouse = hole.querySelector('.mouse');
-      mouse.addEventListener('click', (e) => {
+      mouse.addEventListener('mousedown', (e) => {
         e.preventDefault();
         
         if (!isGameRunning || isPaused || isHit || mouse.dataset.clickable !== "true") return;
@@ -500,7 +543,7 @@
       homeBtn.classList.remove('hidden');
 
       if (isSuccess && cheeseCount > 0) {
-        const bonusScore = cheeseCount * 500;
+        const bonusScore = cheeseCount * 300;
         const finalScore = score + bonusScore;
         overlayTitle.textContent = "🎉 성공! 치즈를 지켜냈습니다!";
         overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
@@ -508,7 +551,7 @@
         addScoreRecord(finalScore, bonusScore, true);
       } else {
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
-        overlayDesc.textContent = "시간이 갈수록 빠르기가 가속됩니다. 다시 도전해보세요!";
+        overlayDesc.textContent = "30초 동안 치즈를 지키지 못했습니다. 다시 도전해보세요!";
         startBtn.textContent = "다시 시작";
         addScoreRecord(0, 0, false);
       }
@@ -516,7 +559,7 @@
 
     function goHome() {
       overlayTitle.textContent = "🧀 치즈를 지켜라!";
-      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 조금씩 더 빠르게 튀어나옵니다!";
+      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 5개를 모두 빼앗기지 않고 지켜내야 합니다!";
       startBtn.textContent = "게임 시작";
       homeBtn.classList.add('hidden');
       resetGame();
