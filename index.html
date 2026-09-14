@@ -43,7 +43,7 @@
       flex-shrink: 0;
     }
 
-    /* 마우스 커서 추적 망치 (?v=1 추가하여 캐시 강제 갱신) */
+    /* 마우스 커서 추적 망치 */
     #hammer {
       position: absolute;
       width: 80px;
@@ -320,7 +320,8 @@
     let popInterval = 1500;
     let stayDuration = 1200;
 
-    let recentRecords = [];
+    // localStorage에서 저장된 기록 불러오기
+    let recentRecords = JSON.parse(localStorage.getItem('cheese_game_records')) || [];
 
     const gameContainer = document.getElementById('game-container');
     const hammer = document.getElementById('hammer');
@@ -477,20 +478,22 @@
       });
     });
 
-    function addScoreRecord(finalScore, bonusScore, isSuccess) {
-      recentRecords.unshift({ finalScore, bonusScore, isSuccess });
-      if (recentRecords.length > 20) recentRecords.pop();
-
+    // 점수판 UI 업데이트 및 localStorage 저장 로직
+    function updateRecordUI() {
       historyList.innerHTML = '';
-      recentRecords.forEach((rec, idx) => {
-        const li = document.createElement('li');
-        if (rec.isSuccess) {
-          li.innerHTML = `<b>#${recentRecords.length - idx} 성공</b> - ${rec.finalScore}점<br><span class="bonus-text">(치즈 보너스: +${rec.bonusScore}점)</span>`;
-        } else {
-          li.innerHTML = `<b style="color:#ff5252;">#${recentRecords.length - idx} 실패</b> - 기록 없음`;
-        }
-        historyList.appendChild(li);
-      });
+      if (recentRecords.length === 0) {
+        historyList.innerHTML = '<li style="text-align: center; color: #888;">기록 없음</li>';
+      } else {
+        recentRecords.forEach((rec, idx) => {
+          const li = document.createElement('li');
+          if (rec.isSuccess) {
+            li.innerHTML = `<b>#${recentRecords.length - idx} 성공</b> - ${rec.finalScore}점<br><span class="bonus-text">(치즈 보너스: +${rec.bonusScore}점)</span>`;
+          } else {
+            li.innerHTML = `<b style="color:#ff5252;">#${recentRecords.length - idx} 실패</b> - 기록 없음`;
+          }
+          historyList.appendChild(li);
+        });
+      }
 
       const successRecords = recentRecords.filter(r => r.isSuccess);
       successRecords.sort((a, b) => b.finalScore - a.finalScore);
@@ -507,6 +510,16 @@
           topList.appendChild(li);
         });
       }
+    }
+
+    function addScoreRecord(finalScore, bonusScore, isSuccess) {
+      recentRecords.unshift({ finalScore, bonusScore, isSuccess });
+      if (recentRecords.length > 20) recentRecords.pop();
+
+      // 브라우저 저장소에 기록 저장
+      localStorage.setItem('cheese_game_records', JSON.stringify(recentRecords));
+
+      updateRecordUI();
     }
 
     function startGame() {
@@ -561,7 +574,9 @@
     startBtn.addEventListener('click', startGame);
     homeBtn.addEventListener('click', goHome);
 
+    // 초기화 시 UI 및 기존 기록 불러오기
     updateCheeseUI();
+    updateRecordUI();
   </script>
 </body>
 </html>
