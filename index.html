@@ -209,7 +209,7 @@
     <div id="ui-bar">
       <div>
         <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
-        <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
+        <div class="info-box">남은 시간: <span id="time-display">30</span>초 | 최고 기록: <span id="high-score-display" style="color: #ffda79;">0</span>점</div>
       </div>
       <div class="info-box">
         점수: <span id="score-display">0</span>
@@ -345,6 +345,7 @@
     }
 
     let score = 0;
+    let highScore = localStorage.getItem('cheese_high_score') || 0;
     let timeRemaining = 30;
     let cheeseCount = 3;
     let gameTimeout = null;
@@ -356,6 +357,7 @@
     const gameContainer = document.getElementById('game-container');
     const hammer = document.getElementById('hammer');
     const scoreDisplay = document.getElementById('score-display');
+    const highScoreDisplay = document.getElementById('high-score-display');
     const timeDisplay = document.getElementById('time-display');
     const cheeseContainer = document.getElementById('cheese-container');
     const speedIndicator = document.getElementById('speed-indicator');
@@ -365,6 +367,8 @@
     const startBtn = document.getElementById('start-btn');
     const homeBtn = document.getElementById('home-btn');
     const holes = document.querySelectorAll('.hole');
+
+    highScoreDisplay.textContent = highScore;
 
     gameContainer.addEventListener('mousemove', (e) => {
       const rect = gameContainer.getBoundingClientRect();
@@ -584,19 +588,34 @@
       overlayScreen.classList.remove('hidden');
       homeBtn.classList.remove('hidden');
 
+      let finalScore = score;
+      let bonusScore = 0;
+
       if (isSuccess && cheeseCount > 0) {
         playWinSound();
-        const bonusScore = cheeseCount * 300;
-        const finalScore = score + bonusScore;
+        bonusScore = cheeseCount * 300;
+        finalScore = score + bonusScore;
         overlayTitle.textContent = "🎉 성공! 치즈를 지켜냈습니다!";
-        overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
-        startBtn.textContent = "다시 시작";
       } else {
         playGameOverSound();
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
-        overlayDesc.textContent = "30초 동안 치즈를 지키지 못했습니다. 다시 도전해보세요!";
-        startBtn.textContent = "다시 시작";
       }
+
+      // 최고 기록 갱신 확인 및 저장
+      let isNewHighScore = false;
+      if (finalScore > highScore) {
+        highScore = finalScore;
+        localStorage.setItem('cheese_high_score', highScore);
+        highScoreDisplay.textContent = highScore;
+        isNewHighScore = true;
+      }
+
+      if (isSuccess && cheeseCount > 0) {
+        overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>${isNewHighScore ? '<br><span style="color: #ffda79;">🏆 최고 기록 경신!</span>' : ''}`;
+      } else {
+        overlayDesc.innerHTML = `30초 동안 치즈를 지키지 못했습니다.<br><b>최종 점수: ${finalScore}점</b>${isNewHighScore ? '<br><span style="color: #ffda79;">🏆 최고 기록 경신!</span>' : ''}`;
+      }
+      startBtn.textContent = "다시 시작";
     }
 
     function goHome() {
