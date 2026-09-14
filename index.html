@@ -22,7 +22,7 @@
       overflow-x: hidden;
     }
 
-    /* 전체 레이아웃: 게임 화면과 우측 랭킹판 배치 */
+    /* 전체 레이아웃: 게임 화면과 우측 랭킹판 나란히 배치 */
     #main-wrapper {
       display: flex;
       gap: 20px;
@@ -147,6 +147,7 @@
       bottom: 10px;
     }
 
+    /* 게임 시작/종료 오버레이 (랭킹 없음) */
     .overlay {
       position: absolute;
       top: 0;
@@ -205,7 +206,7 @@
       display: none !important;
     }
 
-    /* 우측 랭킹 사이드바 스타일 (TOP 3 + 최근 기록 20개) */
+    /* 우측 랭킹 사이드바 레이아웃 (상단: TOP 3, 하단: 최근 기록 20개) */
     #sidebar-ranking {
       width: 280px;
       height: 540px;
@@ -243,8 +244,8 @@
     .top3-item {
       display: flex;
       justify-content: space-between;
-      padding: 4px 6px;
-      margin-bottom: 3px;
+      padding: 5px 8px;
+      margin-bottom: 4px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 4px;
       font-weight: bold;
@@ -267,7 +268,6 @@
       padding-right: 4px;
     }
 
-    /* 커스텀 스크롤바 */
     .recent-scroll::-webkit-scrollbar {
       width: 6px;
     }
@@ -279,7 +279,7 @@
     .recent-item {
       display: flex;
       justify-content: space-between;
-      padding: 3px 6px;
+      padding: 4px 6px;
       font-size: 12px;
       color: #bbb;
       border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
@@ -332,7 +332,7 @@
       </div>
     </div>
 
-    <!-- 우측 랭킹 사이드바 (위: TOP 3, 아래: 최근 기록 20개) -->
+    <!-- 우측 랭킹 사이드바 (상단: TOP 3, 하단: 최근 기록 20개) -->
     <div id="sidebar-ranking">
       <div class="rank-section">
         <h3>🏆 TOP 3 랭킹</h3>
@@ -464,7 +464,7 @@
     let isGameRunning = false;
     let popInterval = 1500;
 
-    // 로컬 스토리지 연동 (TOP 3 및 최근 기록 20개 관리)
+    // 로컬 스토리지 데이터 관리
     let topScores = JSON.parse(localStorage.getItem('cheese_top3')) || [0, 0, 0];
     let recentScores = JSON.parse(localStorage.getItem('cheese_recent20')) || [];
 
@@ -484,7 +484,7 @@
     const holes = document.querySelectorAll('.hole');
 
     function updateSidebarUI() {
-      // TOP 3 업데이트
+      // 상단 TOP 3 렌더링
       top3List.innerHTML = '';
       topScores.forEach((rkScore, idx) => {
         const li = document.createElement('li');
@@ -493,7 +493,7 @@
         top3List.appendChild(li);
       });
 
-      // 최근 기록 20개 업데이트
+      // 하단 최근 기록 20개 렌더링
       recentList.innerHTML = '';
       if (recentScores.length === 0) {
         const li = document.createElement('li');
@@ -745,20 +745,20 @@
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
       }
 
-      // 1. TOP 3 갱신
+      // TOP 3 점수 갱신 및 저장
       topScores.push(finalScore);
       topScores.sort((a, b) => b - a);
       topScores = topScores.slice(0, 3);
       localStorage.setItem('cheese_top3', JSON.stringify(topScores));
 
-      // 2. 최근 기록 20개 갱신 (맨 앞에 추가)
+      // 최근 기록 20개 갱신 및 저장
       recentScores.unshift(finalScore);
       if (recentScores.length > 20) {
         recentScores = recentScores.slice(0, 20);
       }
       localStorage.setItem('cheese_recent20', JSON.stringify(recentScores));
 
-      // 우측 랭킹판 업데이트
+      // 우측 사이드바 랭킹 업데이트
       updateSidebarUI();
 
       if (isSuccess && cheeseCount > 0) {
