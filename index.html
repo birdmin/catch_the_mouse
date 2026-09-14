@@ -206,7 +206,7 @@
 
     /* 우측 랭킹 사이드바 레이아웃 */
     #sidebar-ranking {
-      width: 320px;
+      width: 340px;
       height: 540px;
       background: #242424;
       border: 4px solid #444;
@@ -242,17 +242,18 @@
     .top3-item {
       display: flex;
       justify-content: space-between;
-      padding: 5px 8px;
+      align-items: center;
+      padding: 6px 8px;
       margin-bottom: 4px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 4px;
       font-weight: bold;
-      font-size: 13px;
+      font-size: 12px;
     }
 
-    .top3-item:nth-child(1) { color: #ffd700; }
-    .top3-item:nth-child(2) { color: #c0c0c0; }
-    .top3-item:nth-child(3) { color: #cd7f32; }
+    .top3-item:nth-child(1) { border-left: 3px solid #ffd700; }
+    .top3-item:nth-child(2) { border-left: 3px solid #c0c0c0; }
+    .top3-item:nth-child(3) { border-left: 3px solid #cd7f32; }
 
     #recent-container {
       flex: 1;
@@ -285,12 +286,12 @@
       border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
     }
 
-    .recent-status-success {
+    .status-success {
       color: #55efc4;
       font-weight: bold;
     }
 
-    .recent-status-fail {
+    .status-fail {
       color: #ff7675;
       font-weight: bold;
     }
@@ -347,9 +348,7 @@
       <div class="rank-section">
         <h3>🏆 TOP 3 랭킹</h3>
         <ul id="top3-list" class="top3-list">
-          <li class="top3-item"><span>1위</span><span>0점</span></li>
-          <li class="top3-item"><span>2위</span><span>0점</span></li>
-          <li class="top3-item"><span>3위</span><span>0점</span></li>
+          <li class="top3-item" style="justify-content: center; color: #777;">기록이 없습니다.</li>
         </ul>
       </div>
 
@@ -474,8 +473,8 @@
     let isGameRunning = false;
     let popInterval = 1500;
 
-    // 로컬 스토리지 데이터 관리 (최근 기록 객체 배열 형태로 저장 구조 개선)
-    let topScores = JSON.parse(localStorage.getItem('cheese_top3')) || [0, 0, 0];
+    // 로컬 스토리지 데이터 관리 (TOP 3와 최근 기록 모두 객체 배열 형태로 구조 통일)
+    let topScores = JSON.parse(localStorage.getItem('cheese_top3')) || [];
     let recentScores = JSON.parse(localStorage.getItem('cheese_recent20')) || [];
 
     const gameContainer = document.getElementById('game-container');
@@ -494,16 +493,33 @@
     const holes = document.querySelectorAll('.hole');
 
     function updateSidebarUI() {
-      // 상단 TOP 3 렌더링
+      // 상단 TOP 3 렌더링 (성공/실패 여부, 최종 점수, 보너스 점수 표시)
       top3List.innerHTML = '';
-      topScores.forEach((rkScore, idx) => {
+      if (topScores.length === 0) {
         const li = document.createElement('li');
         li.className = 'top3-item';
-        li.innerHTML = `<span>${idx + 1}위</span><span>${rkScore}점</span>`;
+        li.style.justifyContent = 'center';
+        li.style.color = '#777';
+        li.textContent = '기록이 없습니다.';
         top3List.appendChild(li);
-      });
+      } else {
+        topScores.forEach((rec, idx) => {
+          const li = document.createElement('li');
+          li.className = 'top3-item';
+          
+          const isSuccess = rec.isSuccess;
+          const statusClass = isSuccess ? 'status-success' : 'status-fail';
+          const statusText = isSuccess ? `🟢 ${idx + 1}위 성공` : `🔴 ${idx + 1}위 실패`;
 
-      // 하단 최근 기록 20개 렌더링 (성공/실패 및 보너스 점수 표시)
+          li.innerHTML = `
+            <span class="${statusClass}">${statusText}</span>
+            <span>${rec.finalScore}점 (+${rec.bonus}점)</span>
+          `;
+          top3List.appendChild(li);
+        });
+      }
+
+      // 하단 최근 기록 20개 렌더링
       recentList.innerHTML = '';
       if (recentScores.length === 0) {
         const li = document.createElement('li');
@@ -518,12 +534,12 @@
           li.className = 'recent-item';
           
           const isSuccess = rec.isSuccess;
-          const statusClass = isSuccess ? 'recent-status-success' : 'recent-status-fail';
+          const statusClass = isSuccess ? 'status-success' : 'status-fail';
           const statusText = isSuccess ? '🟢 성공' : '🔴 실패';
 
           li.innerHTML = `
             <span class="${statusClass}">${statusText}</span>
-            <span>최종: ${rec.finalScore}점 (+${rec.bonus}점)</span>
+            <span>${rec.finalScore}점 (+${rec.bonus}점)</span>
           `;
           recentList.appendChild(li);
         });
@@ -752,8 +768,9 @@
 
       let finalScore = score;
       let bonusScore = 0;
+      const gameSuccess = isSuccess && cheeseCount > 0;
 
-      if (isSuccess && cheeseCount > 0) {
+      if (gameSuccess) {
         playWinSound();
         bonusScore = cheeseCount * 300;
         finalScore = score + bonusScore;
@@ -763,19 +780,19 @@
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
       }
 
-      // TOP 3 점수 갱신 및 저장
-      topScores.push(finalScore);
-      topScores.sort((a, b) => b - a);
-      topScores = topScores.slice(0, 3);
-      localStorage.setItem('cheese_top3', JSON.stringify(topScores));
-
-      // 최근 기록 20개 갱신 (성공 여부, 최종 점수, 보너스 점수 객체 형태로 저장)
       const recordData = {
-        isSuccess: isSuccess && cheeseCount > 0,
+        isSuccess: gameSuccess,
         finalScore: finalScore,
         bonus: bonusScore
       };
 
+      // TOP 3 점수 갱신 및 저장 (최종 점수 내림차순 정렬 후 상위 3개 유지)
+      topScores.push(recordData);
+      topScores.sort((a, b) => b.finalScore - a.finalScore);
+      topScores = topScores.slice(0, 3);
+      localStorage.setItem('cheese_top3', JSON.stringify(topScores));
+
+      // 최근 기록 20개 갱신 및 저장
       recentScores.unshift(recordData);
       if (recentScores.length > 20) {
         recentScores = recentScores.slice(0, 20);
@@ -785,7 +802,7 @@
       // 우측 사이드바 랭킹 업데이트
       updateSidebarUI();
 
-      if (isSuccess && cheeseCount > 0) {
+      if (gameSuccess) {
         overlayDesc.innerHTML = `획득 점수: ${score}점 | 치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
       } else {
         overlayDesc.innerHTML = `30초 동안 치즈를 지키지 못했습니다.<br><b>최종 점수: ${finalScore}점</b>`;
