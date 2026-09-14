@@ -87,7 +87,6 @@
       font-weight: bold;
     }
 
-    /* 사운드 제어 버튼 스타일 */
     .audio-btn {
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid #ffda79;
@@ -147,7 +146,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.88);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -157,26 +156,60 @@
     }
 
     .overlay h1 {
-      font-size: 36px;
-      margin-bottom: 10px;
+      font-size: 34px;
+      margin-bottom: 8px;
       color: #ffda79;
     }
 
     .overlay p {
-      font-size: 18px;
-      margin-bottom: 25px;
+      font-size: 16px;
+      margin-bottom: 15px;
       text-align: center;
-      line-height: 1.5;
+      line-height: 1.4;
+    }
+
+    #leaderboard-box {
+      width: 320px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 218, 121, 0.4);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+
+    #leaderboard-box h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      color: #ffda79;
+      text-align: center;
+    }
+
+    #leaderboard-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 14px;
+    }
+
+    #leaderboard-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #leaderboard-list li:last-child {
+      border-bottom: none;
     }
 
     .btn-group {
       display: flex;
-      gap: 15px;
+      gap: 12px;
     }
 
     .btn {
-      padding: 12px 28px;
-      font-size: 18px;
+      padding: 10px 24px;
+      font-size: 16px;
       font-weight: bold;
       color: #1a1a1a;
       background-color: #ffda79;
@@ -187,7 +220,7 @@
     }
 
     .btn-secondary {
-      background-color: #a0a0a0;
+      background-color: #555555;
       color: #ffffff;
     }
 
@@ -202,7 +235,6 @@
 </head>
 <body>
 
-  <!-- 오디오 태그 (같은 폴더의 bgm.mp3 사용) -->
   <audio id="bgm" src="bgm.mp3" loop></audio>
 
   <div id="game-container">
@@ -238,6 +270,15 @@
     <div id="overlay-screen" class="overlay">
       <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
       <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
+      
+      <!-- TOP 3 랭킹 출력 영역 -->
+      <div id="leaderboard-box">
+        <h3>🏆 TOP 3 기록</h3>
+        <ol id="leaderboard-list">
+          <li><span>기록 없음</span><span>-</span></li>
+        </ol>
+      </div>
+
       <div class="btn-group">
         <button id="start-btn" class="btn">게임 시작</button>
         <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
@@ -254,7 +295,7 @@
     let isBgmMuted = false;
     let isSfxMuted = false;
 
-    bgmAudio.volume = 0.3; // 배경음악 볼륨 (30%)
+    bgmAudio.volume = 0.3;
 
     bgmBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -344,6 +385,39 @@
         gain.connect(audioCtx.destination);
         osc.start(audioCtx.currentTime + idx * 0.15);
         osc.stop(audioCtx.currentTime + idx * 0.15 + 0.3);
+      });
+    }
+
+    // --- LocalStorage TOP 3 랭킹 시스템 ---
+    function getScores() {
+      const scores = localStorage.getItem('cheeseGameScores');
+      return scores ? JSON.parse(scores) : [];
+    }
+
+    function saveScore(newScore) {
+      if (newScore <= 0) return;
+      const scores = getScores();
+      const dateStr = new Date().toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
+      scores.push({ score: newScore, date: dateStr });
+      scores.sort((a, b) => b.score - a.score);
+      const top3 = scores.slice(0, 3); // 상위 3개만 잘라서 저장
+      localStorage.setItem('cheeseGameScores', JSON.stringify(top3));
+    }
+
+    function renderLeaderboard() {
+      const listEl = document.getElementById('leaderboard-list');
+      const scores = getScores();
+      listEl.innerHTML = '';
+
+      if (scores.length === 0) {
+        listEl.innerHTML = '<li><span>기록 없음</span><span>-</span></li>';
+        return;
+      }
+
+      scores.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${index + 1}위 (${item.date})</span><b>${item.score}점</b>`;
+        listEl.appendChild(li);
       });
     }
 
@@ -475,7 +549,6 @@
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
-        // 3단계: 0.3초 패턴 제거 (0.45초 40%, 0.65초 60%)
         const rand = Math.random();
         if (rand < 0.4) {
           currentStayDuration = 450;
@@ -483,10 +556,8 @@
           currentStayDuration = 650;
         }
       } else if (elapsed >= 10) {
-        // 2단계
         currentStayDuration = (Math.random() < 0.25) ? 650 : 900;
       } else {
-        // 1단계
         currentStayDuration = 1200;
       }
 
@@ -569,19 +640,24 @@
       overlayScreen.classList.remove('hidden');
       homeBtn.classList.remove('hidden');
 
+      let finalScore = score;
+
       if (isSuccess && cheeseCount > 0) {
         playWinSound();
         const bonusScore = cheeseCount * 300;
-        const finalScore = score + bonusScore;
+        finalScore = score + bonusScore;
         overlayTitle.textContent = "🎉 성공! 치즈를 지켜냈습니다!";
         overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
         startBtn.textContent = "다시 시작";
       } else {
         playGameOverSound();
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
-        overlayDesc.textContent = "30초 동안 치즈를 지키지 못했습니다. 다시 도전해보세요!";
+        overlayDesc.innerHTML = `획득 점수: ${score}점<br>30초 동안 치즈를 지키지 못했습니다.`;
         startBtn.textContent = "다시 시작";
       }
+
+      saveScore(finalScore);
+      renderLeaderboard();
     }
 
     function goHome() {
@@ -592,12 +668,14 @@
       resetGame();
       isGameRunning = false;
       bgmAudio.pause();
+      renderLeaderboard();
     }
 
     startBtn.addEventListener('click', startGame);
     homeBtn.addEventListener('click', goHome);
 
     updateCheeseUI();
+    renderLeaderboard();
   </script>
 </body>
 </html>
