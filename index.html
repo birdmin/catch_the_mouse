@@ -22,7 +22,6 @@
       overflow-x: hidden;
     }
 
-    /* 카드 2: 해상도(1366x768, 1920x1080) 대응 반응형 감싸기 (T02-C10, C11, C13) */
     #main-wrapper {
       display: flex;
       gap: 20px;
@@ -132,6 +131,13 @@
       color: #ffda79;
     }
 
+    #speed-indicator {
+      font-size: 12px;
+      color: #ff5252;
+      margin-left: 8px;
+      font-weight: bold;
+    }
+
     .grid-container {
       position: absolute;
       top: 140px;
@@ -160,7 +166,7 @@
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      transition: bottom 0.15s ease-out;
+      transition: bottom 0.12s ease-out;
       cursor: pointer;
     }
 
@@ -232,7 +238,7 @@
     <div id="game-container">
       <div id="ui-bar">
         <div>
-          <div id="game-rule">🎮 조작: 쥐를 클릭해 치즈를 지키세요!</div>
+          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 보통</span></div>
           <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
         </div>
         <div class="info-box">
@@ -257,7 +263,7 @@
 
       <div id="overlay-screen" class="overlay">
         <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
-        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈가 모두 사라지면 실패합니다!</p>
+        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 더 빠르게 튀어나옵니다!</p>
         <div class="btn-group">
           <button id="start-btn" class="btn">게임 시작</button>
           <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
@@ -286,18 +292,22 @@
     let score = 0;
     let timeRemaining = 30;
     let cheeseCount = 3;
-    let gameInterval = null;
+    let gameTimeout = null;
     let timerInterval = null;
-    let activeMouse = null;
     let isHit = false;
     let isGameRunning = false;
-    let isPaused = false; // 일시정지 상태 (포커스 이탈 시)
+    let isPaused = false;
     
+    // 난이도 가속 파라미터
+    let popInterval = 1200; // 쥐 등장 주기 (ms)
+    let stayDuration = 1000; // 쥐 체류 시간 (ms)
+
     let recentRecords = [];
 
     const scoreDisplay = document.getElementById('score-display');
     const timeDisplay = document.getElementById('time-display');
     const cheeseContainer = document.getElementById('cheese-container');
+    const speedIndicator = document.getElementById('speed-indicator');
     const overlayScreen = document.getElementById('overlay-screen');
     const overlayTitle = document.getElementById('overlay-title');
     const overlayDesc = document.getElementById('overlay-desc');
@@ -323,6 +333,12 @@
       cheeseCount = 3;
       isGameRunning = true;
       isPaused = false;
+      
+      popInterval = 1200;
+      stayDuration = 1000;
+      speedIndicator.textContent = "단계: 1단계 (보통)";
+      speedIndicator.style.color = "#ffda79";
+
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeRemaining;
       updateCheeseUI();
@@ -340,15 +356,43 @@
       return holes[idx];
     }
 
-    function popUpMouse() {
-      if (!isGameRunning || isPaused) return;
+    // 시간대별 난이도 조절 함수 (10초 단위)
+    function adjustDifficulty() {
+      const elapsed = 30 - timeRemaining;
+      
+      if (elapsed >= 20) {
+        // 20~30초 (3단계: 광란)
+        popInterval = 650;
+        stayDuration = 550;
+        speedIndicator.textContent = "단계: 3단계 (광란 🔥)";
+        speedIndicator.style.color = "#ff5252";
+      } else if (elapsed >= 10) {
+        // 10~20초 (2단계: 가속)
+        popInterval = 900;
+        stayDuration = 750;
+        speedIndicator.textContent = "단계: 2단계 (빠름 ⚡)";
+        speedIndicator.style.color = "#ffbe76";
+      }
+    }
 
+    function scheduleNextMouse() {
+      if (!isGameRunning) return;
+
+      gameTimeout = setTimeout(() => {
+        if (isGameRunning && !isPaused) {
+          popUpMouse();
+        } else {
+          scheduleNextMouse();
+        }
+      }, popInterval);
+    }
+
+    function popUpMouse() {
       const hole = getRandomHole();
       const mouse = hole.querySelector('.mouse');
-      activeMouse = mouse;
       isHit = false;
 
-      mouse.dataset.clickable = "true"; // 광클 방지용 클릭 가능 상태 설정 (T02-C12)
+      mouse.dataset.clickable = "true";
       mouse.style.backgroundImage = "url('mouse_popup.png')";
       mouse.classList.add('up');
 
@@ -363,23 +407,24 @@
 
             if (cheeseCount <= 0) {
               endGame(false);
+              return;
             }
           }
         }
-      }, 1000);
+      }, stayDuration);
+
+      scheduleNextMouse();
     }
 
-    // 카드 2: 광클 연타 시 중복 점수 획득 방지 (T02-C12)
     holes.forEach(hole => {
       const mouse = hole.querySelector('.mouse');
       mouse.addEventListener('click', (e) => {
         e.preventDefault();
         
-        // 이미 맞았거나, 클릭 불가능 상태거나, 일시정지 상태면 무시
         if (!isGameRunning || isPaused || isHit || mouse.dataset.clickable !== "true") return;
 
         isHit = true;
-        mouse.dataset.clickable = "false"; // 1회 클릭 후 클릭 불가 상태로 변경
+        mouse.dataset.clickable = "false";
 
         score += 100;
         scoreDisplay.textContent = score;
@@ -388,28 +433,16 @@
 
         setTimeout(() => {
           mouse.classList.remove('up');
-        }, 300);
+        }, 200);
       });
     });
 
-    // 카드 2: 포커스 이탈/복귀 시 자동 일시정지 및 재개 (T02-C14, C15)
-    window.addEventListener('blur', () => {
-      if (isGameRunning) {
-        isPaused = true;
-      }
-    });
-
-    window.addEventListener('focus', () => {
-      if (isGameRunning && isPaused) {
-        isPaused = false;
-      }
-    });
+    window.addEventListener('blur', () => { if (isGameRunning) isPaused = true; });
+    window.addEventListener('focus', () => { if (isGameRunning && isPaused) isPaused = false; });
 
     function addScoreRecord(finalScore, bonusScore, isSuccess) {
       recentRecords.unshift({ finalScore, bonusScore, isSuccess });
-      if (recentRecords.length > 20) {
-        recentRecords.pop();
-      }
+      if (recentRecords.length > 20) recentRecords.pop();
 
       historyList.innerHTML = '';
       recentRecords.forEach((rec, idx) => {
@@ -447,6 +480,7 @@
         if (!isPaused) {
           timeRemaining--;
           timeDisplay.textContent = timeRemaining;
+          adjustDifficulty();
 
           if (timeRemaining <= 0) {
             endGame(true);
@@ -454,17 +488,13 @@
         }
       }, 1000);
 
-      gameInterval = setInterval(() => {
-        if (!isPaused) {
-          popUpMouse();
-        }
-      }, 1200);
+      scheduleNextMouse();
     }
 
     function endGame(isSuccess) {
       isGameRunning = false;
       isPaused = false;
-      clearInterval(gameInterval);
+      clearTimeout(gameTimeout);
       clearInterval(timerInterval);
 
       overlayScreen.classList.remove('hidden');
@@ -479,7 +509,7 @@
         addScoreRecord(finalScore, bonusScore, true);
       } else {
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
-        overlayDesc.textContent = "30초 동안 치즈를 지키지 못했습니다. 다시 도전해보세요!";
+        overlayDesc.textContent = "시간이 갈수록 빠르기가 가속됩니다. 다시 도전해보세요!";
         startBtn.textContent = "다시 시작";
         addScoreRecord(0, 0, false);
       }
@@ -487,7 +517,7 @@
 
     function goHome() {
       overlayTitle.textContent = "🧀 치즈를 지켜라!";
-      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈가 모두 사라지면 실패합니다!";
+      overlayDesc.innerHTML = "30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>시간이 흐를수록 쥐들이 더 빠르게 튀어나옵니다!";
       startBtn.textContent = "게임 시작";
       homeBtn.classList.add('hidden');
       resetGame();
