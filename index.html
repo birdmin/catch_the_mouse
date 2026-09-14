@@ -22,6 +22,13 @@
       overflow-x: hidden;
     }
 
+    /* 전체 레이아웃: 게임 화면과 우측 랭킹판 배치 */
+    #main-wrapper {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
     #game-container {
       position: relative;
       width: 960px;
@@ -140,14 +147,13 @@
       bottom: 10px;
     }
 
-    /* 오버레이 화면 및 랭킹창 레이아웃 */
     .overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.88);
+      background: rgba(0, 0, 0, 0.85);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -157,59 +163,17 @@
     }
 
     .overlay h1 {
-      font-size: 32px;
-      margin: 0 0 8px 0;
+      font-size: 36px;
+      margin-bottom: 10px;
       color: #ffda79;
-      text-align: center;
     }
 
     .overlay p {
-      font-size: 15px;
-      margin: 0 0 15px 0;
-      text-align: center;
-      line-height: 1.4;
-      color: #ddd;
-    }
-
-    #ranking-board {
-      background: rgba(40, 40, 40, 0.9);
-      border: 2px solid #ffda79;
-      border-radius: 10px;
-      padding: 12px 20px;
-      margin-bottom: 20px;
-      width: 320px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    }
-
-    #ranking-board h3 {
-      margin: 0 0 10px 0;
       font-size: 16px;
-      color: #ffda79;
+      margin-bottom: 25px;
       text-align: center;
-      letter-spacing: 1px;
+      line-height: 1.5;
     }
-
-    .rank-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .rank-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 10px;
-      margin-bottom: 4px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: bold;
-    }
-
-    .rank-item:nth-child(1) { color: #ffd700; } /* 1위 금색 */
-    .rank-item:nth-child(2) { color: #c0c0c0; } /* 2위 은색 */
-    .rank-item:nth-child(3) { color: #cd7f32; } /* 3위 동색 */
 
     .btn-group {
       display: flex;
@@ -240,60 +204,152 @@
     .hidden {
       display: none !important;
     }
+
+    /* 우측 랭킹 사이드바 스타일 (TOP 3 + 최근 기록 20개) */
+    #sidebar-ranking {
+      width: 280px;
+      height: 540px;
+      background: #242424;
+      border: 4px solid #444;
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rank-section {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .rank-section h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #ffda79;
+      text-align: center;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+    }
+
+    .top3-list, .recent-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .top3-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 6px;
+      margin-bottom: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .top3-item:nth-child(1) { color: #ffd700; }
+    .top3-item:nth-child(2) { color: #c0c0c0; }
+    .top3-item:nth-child(3) { color: #cd7f32; }
+
+    #recent-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .recent-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    /* 커스텀 스크롤바 */
+    .recent-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .recent-scroll::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 3px;
+    }
+
+    .recent-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 6px;
+      font-size: 12px;
+      color: #bbb;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
   </style>
 </head>
 <body>
 
   <audio id="bgm" src="bgm.mp3" loop></audio>
 
-  <div id="game-container">
-    <div id="hammer"></div>
+  <div id="main-wrapper">
+    <!-- 게임 본체 컨테이너 -->
+    <div id="game-container">
+      <div id="hammer"></div>
 
-    <div id="ui-bar">
-      <div>
-        <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
-        <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
+      <div id="ui-bar">
+        <div>
+          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
+          <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
+        </div>
+        <div class="info-box">
+          점수: <span id="score-display">0</span>
+        </div>
+        <div class="info-box">
+          치즈: <span id="cheese-container"></span>
+          <button id="bgm-btn" class="audio-btn">🎵 BGM ON</button>
+          <button id="sfx-btn" class="audio-btn">🔊 SFX ON</button>
+        </div>
       </div>
-      <div class="info-box">
-        점수: <span id="score-display">0</span>
+
+      <div class="grid-container">
+        <div class="hole" data-index="0"><div class="mouse"></div></div>
+        <div class="hole" data-index="1"><div class="mouse"></div></div>
+        <div class="hole" data-index="2"><div class="mouse"></div></div>
+        <div class="hole" data-index="3"><div class="mouse"></div></div>
+        <div class="hole" data-index="4"><div class="mouse"></div></div>
+        <div class="hole" data-index="5"><div class="mouse"></div></div>
+        <div class="hole" data-index="6"><div class="mouse"></div></div>
+        <div class="hole" data-index="7"><div class="mouse"></div></div>
+        <div class="hole" data-index="8"><div class="mouse"></div></div>
       </div>
-      <div class="info-box">
-        치즈: <span id="cheese-container"></span>
-        <button id="bgm-btn" class="audio-btn">🎵 BGM ON</button>
-        <button id="sfx-btn" class="audio-btn">🔊 SFX ON</button>
+
+      <div id="overlay-screen" class="overlay">
+        <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
+        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
+        <div class="btn-group">
+          <button id="start-btn" class="btn">게임 시작</button>
+          <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
+        </div>
       </div>
     </div>
 
-    <div class="grid-container">
-      <div class="hole" data-index="0"><div class="mouse"></div></div>
-      <div class="hole" data-index="1"><div class="mouse"></div></div>
-      <div class="hole" data-index="2"><div class="mouse"></div></div>
-      <div class="hole" data-index="3"><div class="mouse"></div></div>
-      <div class="hole" data-index="4"><div class="mouse"></div></div>
-      <div class="hole" data-index="5"><div class="mouse"></div></div>
-      <div class="hole" data-index="6"><div class="mouse"></div></div>
-      <div class="hole" data-index="7"><div class="mouse"></div></div>
-      <div class="hole" data-index="8"><div class="mouse"></div></div>
-    </div>
-
-    <!-- 랭킹창이 명확하게 포함된 오버레이 화면 -->
-    <div id="overlay-screen" class="overlay">
-      <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
-      <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
-      
-      <!-- 랭킹창 레이아웃 -->
-      <div id="ranking-board">
-        <h3>🏆 명예의 전당 (TOP 3)</h3>
-        <ul id="rank-list" class="rank-list">
-          <li class="rank-item"><span>1위</span><span>0점</span></li>
-          <li class="rank-item"><span>2위</span><span>0점</span></li>
-          <li class="rank-item"><span>3위</span><span>0점</span></li>
+    <!-- 우측 랭킹 사이드바 (위: TOP 3, 아래: 최근 기록 20개) -->
+    <div id="sidebar-ranking">
+      <div class="rank-section">
+        <h3>🏆 TOP 3 랭킹</h3>
+        <ul id="top3-list" class="top3-list">
+          <li class="top3-item"><span>1위</span><span>0점</span></li>
+          <li class="top3-item"><span>2위</span><span>0점</span></li>
+          <li class="top3-item"><span>3위</span><span>0점</span></li>
         </ul>
       </div>
 
-      <div class="btn-group">
-        <button id="start-btn" class="btn">게임 시작</button>
-        <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
+      <div id="recent-container" class="rank-section">
+        <h3>📜 최근 기록 (최대 20개)</h3>
+        <div class="recent-scroll">
+          <ul id="recent-list" class="recent-list">
+            <li class="recent-item" style="justify-content: center; color: #777;">기록이 없습니다.</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -408,8 +464,9 @@
     let isGameRunning = false;
     let popInterval = 1500;
 
-    // 로컬 스토리지에서 랭킹 데이터 불러오기 (기본값 3개)
-    let rankings = JSON.parse(localStorage.getItem('cheese_rankings')) || [0, 0, 0];
+    // 로컬 스토리지 연동 (TOP 3 및 최근 기록 20개 관리)
+    let topScores = JSON.parse(localStorage.getItem('cheese_top3')) || [0, 0, 0];
+    let recentScores = JSON.parse(localStorage.getItem('cheese_recent20')) || [];
 
     const gameContainer = document.getElementById('game-container');
     const hammer = document.getElementById('hammer');
@@ -420,22 +477,42 @@
     const overlayScreen = document.getElementById('overlay-screen');
     const overlayTitle = document.getElementById('overlay-title');
     const overlayDesc = document.getElementById('overlay-desc');
-    const rankList = document.getElementById('rank-list');
+    const top3List = document.getElementById('top3-list');
+    const recentList = document.getElementById('recent-list');
     const startBtn = document.getElementById('start-btn');
     const homeBtn = document.getElementById('home-btn');
     const holes = document.querySelectorAll('.hole');
 
-    function updateRankingUI() {
-      rankList.innerHTML = '';
-      rankings.forEach((rkScore, idx) => {
+    function updateSidebarUI() {
+      // TOP 3 업데이트
+      top3List.innerHTML = '';
+      topScores.forEach((rkScore, idx) => {
         const li = document.createElement('li');
-        li.className = 'rank-item';
+        li.className = 'top3-item';
         li.innerHTML = `<span>${idx + 1}위</span><span>${rkScore}점</span>`;
-        rankList.appendChild(li);
+        top3List.appendChild(li);
       });
+
+      // 최근 기록 20개 업데이트
+      recentList.innerHTML = '';
+      if (recentScores.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'recent-item';
+        li.style.justifyContent = 'center';
+        li.style.color = '#777';
+        li.textContent = '기록이 없습니다.';
+        recentList.appendChild(li);
+      } else {
+        recentScores.forEach((rec, idx) => {
+          const li = document.createElement('li');
+          li.className = 'recent-item';
+          li.innerHTML = `<span>#${idx + 1}</span><span>${rec}점</span>`;
+          recentList.appendChild(li);
+        });
+      }
     }
 
-    updateRankingUI();
+    updateSidebarUI();
 
     gameContainer.addEventListener('mousemove', (e) => {
       const rect = gameContainer.getBoundingClientRect();
@@ -668,12 +745,21 @@
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
       }
 
-      // 랭킹 리스트 업데이트 및 저장 (TOP 3)
-      rankings.push(finalScore);
-      rankings.sort((a, b) => b - a);
-      rankings = rankings.slice(0, 3);
-      localStorage.setItem('cheese_rankings', JSON.stringify(rankings));
-      updateRankingUI();
+      // 1. TOP 3 갱신
+      topScores.push(finalScore);
+      topScores.sort((a, b) => b - a);
+      topScores = topScores.slice(0, 3);
+      localStorage.setItem('cheese_top3', JSON.stringify(topScores));
+
+      // 2. 최근 기록 20개 갱신 (맨 앞에 추가)
+      recentScores.unshift(finalScore);
+      if (recentScores.length > 20) {
+        recentScores = recentScores.slice(0, 20);
+      }
+      localStorage.setItem('cheese_recent20', JSON.stringify(recentScores));
+
+      // 우측 랭킹판 업데이트
+      updateSidebarUI();
 
       if (isSuccess && cheeseCount > 0) {
         overlayDesc.innerHTML = `획득 점수: ${score}점 | 치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
