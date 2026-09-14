@@ -87,7 +87,6 @@
       font-weight: bold;
     }
 
-    /* 사운드 제어 버튼 스타일 */
     .audio-btn {
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid #ffda79;
@@ -202,7 +201,6 @@
 </head>
 <body>
 
-  <!-- 오디오 태그 (같은 폴더의 bgm.mp3 사용) -->
   <audio id="bgm" src="bgm.mp3" loop></audio>
 
   <div id="game-container">
@@ -246,7 +244,6 @@
   </div>
 
   <script>
-    // --- Audio 객체 및 사운드 제어 ---
     const bgmAudio = document.getElementById('bgm');
     const bgmBtn = document.getElementById('bgm-btn');
     const sfxBtn = document.getElementById('sfx-btn');
@@ -254,7 +251,7 @@
     let isBgmMuted = false;
     let isSfxMuted = false;
 
-    bgmAudio.volume = 0.3; // 배경음악 볼륨 조정 (30%)
+    bgmAudio.volume = 0.3;
 
     bgmBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -347,15 +344,13 @@
       });
     }
 
-    // --- 게임 상태 변수 ---
     let score = 0;
     let timeRemaining = 30;
     let cheeseCount = 3;
     let gameTimeout = null;
+    let activeMouseTimeouts = [];
     let timerInterval = null;
-    let isHit = false;
     let isGameRunning = false;
-
     let popInterval = 1500;
 
     const gameContainer = document.getElementById('game-container');
@@ -415,7 +410,15 @@
       }
     }
 
+    function clearAllTimers() {
+      clearTimeout(gameTimeout);
+      gameTimeout = null;
+      activeMouseTimeouts.forEach(t => clearTimeout(t));
+      activeMouseTimeouts = [];
+    }
+
     function resetGame() {
+      clearAllTimers();
       score = 0;
       timeRemaining = 30;
       cheeseCount = 3;
@@ -433,6 +436,7 @@
         const mouse = hole.querySelector('.mouse');
         mouse.classList.remove('up');
         mouse.dataset.clickable = "false";
+        mouse.dataset.hitProcessed = "false";
         mouse.style.backgroundImage = '';
       });
     }
@@ -467,9 +471,15 @@
     }
 
     function popUpMouse() {
+      if (!isGameRunning) return;
+
       const hole = getRandomHole();
       const mouse = hole.querySelector('.mouse');
-      isHit = false;
+      
+      if (mouse.classList.contains('up')) {
+        scheduleNextMouse();
+        return;
+      }
 
       let currentStayDuration = 1200;
       const elapsed = 30 - timeRemaining;
@@ -490,15 +500,19 @@
       }
 
       mouse.dataset.clickable = "true";
+      mouse.dataset.hitProcessed = "false";
       mouse.style.backgroundImage = "url('mouse_popup.png')";
       mouse.classList.add('up');
 
-      setTimeout(() => {
+      const stayTimeout = setTimeout(() => {
+        const index = activeMouseTimeouts.indexOf(stayTimeout);
+        if (index > -1) activeMouseTimeouts.splice(index, 1);
+
         if (mouse.classList.contains('up')) {
           mouse.classList.remove('up');
           mouse.dataset.clickable = "false";
 
-          if (!isHit && isGameRunning) {
+          if (mouse.dataset.hitProcessed !== "true" && isGameRunning) {
             cheeseCount--;
             updateCheeseUI();
 
@@ -507,19 +521,21 @@
               return;
             }
           }
+          mouse.dataset.hitProcessed = "false";
         }
       }, currentStayDuration);
 
+      activeMouseTimeouts.push(stayTimeout);
       scheduleNextMouse();
     }
 
     holes.forEach(hole => {
       const mouse = hole.querySelector('.mouse');
       mouse.addEventListener('mousedown', (e) => {
-        if (!isGameRunning || isHit || mouse.dataset.clickable !== "true") return;
+        if (!isGameRunning || mouse.dataset.clickable !== "true") return;
 
-        isHit = true;
         mouse.dataset.clickable = "false";
+        mouse.dataset.hitProcessed = "true";
 
         playHitSound();
 
@@ -560,7 +576,7 @@
 
     function endGame(isSuccess) {
       isGameRunning = false;
-      clearTimeout(gameTimeout);
+      clearAllTimers();
       clearInterval(timerInterval);
 
       bgmAudio.pause();
