@@ -39,25 +39,25 @@
       border: 4px solid #444;
       border-radius: 12px;
       overflow: hidden;
-      cursor: none; /* 기본 커서 숨김 */
+      cursor: none; /* 기본 마우스 커서 숨김 */
       flex-shrink: 0;
     }
 
-    /* custom 망치 엘리먼트 */
+    /* 마우스를 따라다니는 망치 */
     #hammer {
       position: absolute;
       width: 80px;
       height: 80px;
       background: url('hammer.png') no-repeat center/contain;
-      pointer-events: none; /* 클릭 이벤트 통과 */
+      pointer-events: none; /* 클릭 이벤트가 망치를 통과하여 쥐에 전달되도록 함 */
       z-index: 100;
-      transform-origin: bottom right; /* 망치 손잡이 기준 회전 */
+      transform-origin: bottom right; /* 손잡이 기준 회전 */
       transition: transform 0.05s ease-out;
       display: none;
     }
 
     #hammer.hit {
-      transform: rotate(-45deg); /* 타격 시 회전 */
+      transform: rotate(-45deg); /* 타격 시 -45도 회전 */
     }
 
     #score-board {
@@ -254,6 +254,7 @@
 
   <div id="main-wrapper">
     <div id="game-container">
+      <!-- 망치 엘리먼트 -->
       <div id="hammer"></div>
 
       <div id="ui-bar">
@@ -311,13 +312,12 @@
   <script>
     let score = 0;
     let timeRemaining = 30;
-    let cheeseCount = 5;
+    let cheeseCount = 5; // 확실히 치즈 5개 적용
     let gameTimeout = null;
     let timerInterval = null;
     let isHit = false;
     let isGameRunning = false;
-    let isPaused = false;
-    
+
     let popInterval = 1500;
     let stayDuration = 1200;
 
@@ -338,7 +338,7 @@
     const topList = document.getElementById('top-list');
     const holes = document.querySelectorAll('.hole');
 
-    // 망치 이동 추적 연출
+    // 마우스 커서 추적 및 망치 위치 갱신
     gameContainer.addEventListener('mousemove', (e) => {
       const rect = gameContainer.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -353,7 +353,7 @@
       hammer.style.display = 'none';
     });
 
-    // 클릭 타격 애니메이션
+    // 클릭 타격 애니메이션 (MouseDown / MouseUp)
     gameContainer.addEventListener('mousedown', () => {
       hammer.classList.add('hit');
     });
@@ -375,10 +375,9 @@
     function resetGame() {
       score = 0;
       timeRemaining = 30;
-      cheeseCount = 5;
+      cheeseCount = 5; // 초기화 시 5개로 변경
       isGameRunning = true;
-      isPaused = false;
-      
+
       popInterval = 1500;
       stayDuration = 1200;
       speedIndicator.textContent = "단계: 1단계 (보통)";
@@ -403,7 +402,7 @@
 
     function adjustDifficulty() {
       const elapsed = 30 - timeRemaining;
-      
+
       if (elapsed >= 20) {
         popInterval = 1100;
         stayDuration = 900;
@@ -421,10 +420,8 @@
       if (!isGameRunning) return;
 
       gameTimeout = setTimeout(() => {
-        if (isGameRunning && !isPaused) {
+        if (isGameRunning) {
           popUpMouse();
-        } else {
-          scheduleNextMouse();
         }
       }, popInterval);
     }
@@ -443,7 +440,7 @@
           mouse.classList.remove('up');
           mouse.dataset.clickable = "false";
 
-          if (!isHit && isGameRunning && !isPaused) {
+          if (!isHit && isGameRunning) {
             cheeseCount--;
             updateCheeseUI();
 
@@ -462,8 +459,8 @@
       const mouse = hole.querySelector('.mouse');
       mouse.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        
-        if (!isGameRunning || isPaused || isHit || mouse.dataset.clickable !== "true") return;
+
+        if (!isGameRunning || isHit || mouse.dataset.clickable !== "true") return;
 
         isHit = true;
         mouse.dataset.clickable = "false";
@@ -478,9 +475,6 @@
         }, 200);
       });
     });
-
-    window.addEventListener('blur', () => { if (isGameRunning) isPaused = true; });
-    window.addEventListener('focus', () => { if (isGameRunning && isPaused) isPaused = false; });
 
     function addScoreRecord(finalScore, bonusScore, isSuccess) {
       recentRecords.unshift({ finalScore, bonusScore, isSuccess });
@@ -518,15 +512,14 @@
       resetGame();
       overlayScreen.classList.add('hidden');
 
+      // 백그라운드에서도 끊김 없이 지속해서 동작
       timerInterval = setInterval(() => {
-        if (!isPaused) {
-          timeRemaining--;
-          timeDisplay.textContent = timeRemaining;
-          adjustDifficulty();
+        timeRemaining--;
+        timeDisplay.textContent = timeRemaining;
+        adjustDifficulty();
 
-          if (timeRemaining <= 0) {
-            endGame(true);
-          }
+        if (timeRemaining <= 0) {
+          endGame(true);
         }
       }, 1000);
 
@@ -535,7 +528,6 @@
 
     function endGame(isSuccess) {
       isGameRunning = false;
-      isPaused = false;
       clearTimeout(gameTimeout);
       clearInterval(timerInterval);
 
