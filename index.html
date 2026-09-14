@@ -22,15 +22,6 @@
       overflow-x: hidden;
     }
 
-    #main-wrapper {
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
-      max-width: 100%;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
     #game-container {
       position: relative;
       width: 960px;
@@ -40,7 +31,6 @@
       border-radius: 12px;
       overflow: hidden;
       cursor: none;
-      flex-shrink: 0;
     }
 
     #hammer {
@@ -57,63 +47,6 @@
 
     #hammer.hit {
       transform: rotate(-45deg);
-    }
-
-    #score-board {
-      width: 320px;
-      height: 540px;
-      background: #2a2a2a;
-      border: 4px solid #444;
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-
-    .board-section {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .board-section.recent {
-      flex-grow: 1;
-      overflow: hidden;
-    }
-
-    #score-board h2 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      color: #ffda79;
-      border-bottom: 2px solid #444;
-      padding-bottom: 4px;
-    }
-
-    .record-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      overflow-y: auto;
-    }
-
-    .record-list li {
-      background: #333;
-      padding: 8px 10px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-      font-size: 13px;
-      line-height: 1.3;
-    }
-
-    .top-list li {
-      background: #3a3218;
-      border: 1px solid #ffda79;
-    }
-
-    .bonus-text {
-      font-size: 11px;
-      color: #ffda79;
     }
 
     #ui-bar {
@@ -154,7 +87,7 @@
       font-weight: bold;
     }
 
-    /* 사운드 제어 버튼 공통 스타일 */
+    /* 사운드 제어 버튼 스타일 */
     .audio-btn {
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid #ffda79;
@@ -272,60 +205,42 @@
   <!-- 오디오 태그 (같은 폴더의 bgm.mp3 사용) -->
   <audio id="bgm" src="bgm.mp3" loop></audio>
 
-  <div id="main-wrapper">
-    <div id="game-container">
-      <div id="hammer"></div>
+  <div id="game-container">
+    <div id="hammer"></div>
 
-      <div id="ui-bar">
-        <div>
-          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
-          <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
-        </div>
-        <div class="info-box">
-          점수: <span id="score-display">0</span>
-        </div>
-        <div class="info-box">
-          치즈: <span id="cheese-container"></span>
-          <button id="bgm-btn" class="audio-btn">🎵 BGM ON</button>
-          <button id="sfx-btn" class="audio-btn">🔊 SFX ON</button>
-        </div>
+    <div id="ui-bar">
+      <div>
+        <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! <span id="speed-indicator">단계: 1단계 (보통)</span></div>
+        <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
       </div>
-
-      <div class="grid-container">
-        <div class="hole" data-index="0"><div class="mouse"></div></div>
-        <div class="hole" data-index="1"><div class="mouse"></div></div>
-        <div class="hole" data-index="2"><div class="mouse"></div></div>
-        <div class="hole" data-index="3"><div class="mouse"></div></div>
-        <div class="hole" data-index="4"><div class="mouse"></div></div>
-        <div class="hole" data-index="5"><div class="mouse"></div></div>
-        <div class="hole" data-index="6"><div class="mouse"></div></div>
-        <div class="hole" data-index="7"><div class="mouse"></div></div>
-        <div class="hole" data-index="8"><div class="mouse"></div></div>
+      <div class="info-box">
+        점수: <span id="score-display">0</span>
       </div>
-
-      <div id="overlay-screen" class="overlay">
-        <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
-        <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
-        <div class="btn-group">
-          <button id="start-btn" class="btn">게임 시작</button>
-          <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
-        </div>
+      <div class="info-box">
+        치즈: <span id="cheese-container"></span>
+        <button id="bgm-btn" class="audio-btn">🎵 BGM ON</button>
+        <button id="sfx-btn" class="audio-btn">🔊 SFX ON</button>
       </div>
     </div>
 
-    <div id="score-board">
-      <div class="board-section">
-        <h2>👑 최고 기록 TOP 3</h2>
-        <ul id="top-list" class="record-list top-list">
-          <li style="text-align: center; color: #888;">기록 없음</li>
-        </ul>
-      </div>
+    <div class="grid-container">
+      <div class="hole" data-index="0"><div class="mouse"></div></div>
+      <div class="hole" data-index="1"><div class="mouse"></div></div>
+      <div class="hole" data-index="2"><div class="mouse"></div></div>
+      <div class="hole" data-index="3"><div class="mouse"></div></div>
+      <div class="hole" data-index="4"><div class="mouse"></div></div>
+      <div class="hole" data-index="5"><div class="mouse"></div></div>
+      <div class="hole" data-index="6"><div class="mouse"></div></div>
+      <div class="hole" data-index="7"><div class="mouse"></div></div>
+      <div class="hole" data-index="8"><div class="mouse"></div></div>
+    </div>
 
-      <div class="board-section recent">
-        <h2>📜 최근 기록 (최근 20개)</h2>
-        <ul id="history-list" class="record-list">
-          <li style="text-align: center; color: #888;">기록 없음</li>
-        </ul>
+    <div id="overlay-screen" class="overlay">
+      <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
+      <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
+      <div class="btn-group">
+        <button id="start-btn" class="btn">게임 시작</button>
+        <button id="home-btn" class="btn btn-secondary hidden">처음으로</button>
       </div>
     </div>
   </div>
@@ -454,8 +369,6 @@
     const overlayDesc = document.getElementById('overlay-desc');
     const startBtn = document.getElementById('start-btn');
     const homeBtn = document.getElementById('home-btn');
-    const historyList = document.getElementById('history-list');
-    const topList = document.getElementById('top-list');
     const holes = document.querySelectorAll('.hole');
 
     gameContainer.addEventListener('mousemove', (e) => {
@@ -621,66 +534,6 @@
       });
     });
 
-    // -------------------------------------------------------------
-    // 💾 브라우저 LocalStorage 기반 기록 저장 및 불러오기
-    // -------------------------------------------------------------
-    function getStoredRecords() {
-      const data = localStorage.getItem('game_records_local');
-      return data ? JSON.parse(data) : [];
-    }
-
-    function updateScoreBoard() {
-      const records = getStoredRecords();
-
-      // 최근 기록 20개 (최신순)
-      records.sort((a, b) => b.timestamp - a.timestamp);
-
-      historyList.innerHTML = '';
-      if (records.length === 0) {
-        historyList.innerHTML = '<li style="text-align: center; color: #888;">기록 없음</li>';
-      } else {
-        const recent20 = records.slice(0, 20);
-        recent20.forEach(rec => {
-          const li = document.createElement('li');
-          if (rec.isSuccess) {
-            li.innerHTML = `<b>성공</b> - ${rec.finalScore}점<br><span class="bonus-text">(치즈 보너스: +${rec.bonusScore}점)</span>`;
-          } else {
-            li.innerHTML = `<b style="color:#ff5252;">실패</b> - 기록 없음`;
-          }
-          historyList.appendChild(li);
-        });
-      }
-
-      // TOP 3 (성공 기록 대상, 높은 점수순)
-      const successRecords = records.filter(r => r.isSuccess);
-      successRecords.sort((a, b) => b.finalScore - a.finalScore);
-      const top3 = successRecords.slice(0, 3);
-
-      topList.innerHTML = '';
-      if (top3.length === 0) {
-        topList.innerHTML = '<li style="text-align: center; color: #888;">기록 없음</li>';
-      } else {
-        top3.forEach((rec, idx) => {
-          const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
-          const li = document.createElement('li');
-          li.innerHTML = `<b>${medal} ${idx + 1}위</b>: ${rec.finalScore}점 <span class="bonus-text">(+${rec.bonusScore})</span>`;
-          topList.appendChild(li);
-        });
-      }
-    }
-
-    function addScoreRecord(finalScore, bonusScore, isSuccess) {
-      const records = getStoredRecords();
-      records.push({
-        finalScore: finalScore,
-        bonusScore: bonusScore,
-        isSuccess: isSuccess,
-        timestamp: Date.now()
-      });
-      localStorage.setItem('game_records_local', JSON.stringify(records));
-      updateScoreBoard();
-    }
-
     function startGame() {
       initAudio();
       
@@ -722,13 +575,11 @@
         overlayTitle.textContent = "🎉 성공! 치즈를 지켜냈습니다!";
         overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
         startBtn.textContent = "다시 시작";
-        addScoreRecord(finalScore, bonusScore, true);
       } else {
         playGameOverSound();
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
         overlayDesc.textContent = "30초 동안 치즈를 지키지 못했습니다. 다시 도전해보세요!";
         startBtn.textContent = "다시 시작";
-        addScoreRecord(0, 0, false);
       }
     }
 
@@ -746,7 +597,6 @@
     homeBtn.addEventListener('click', goHome);
 
     updateCheeseUI();
-    updateScoreBoard(); // 페이지 로드 시 기존 점수판 불러오기
   </script>
 </body>
 </html>
