@@ -21,14 +21,12 @@
       min-height: 100vh;
     }
 
-    /* 게임 전체 레이아웃 (게임 화면 + 우측 점수판) */
     #main-wrapper {
       display: flex;
       gap: 20px;
       align-items: flex-start;
     }
 
-    /* 게임 컨테이너 */
     #game-container {
       position: relative;
       width: 960px;
@@ -40,46 +38,60 @@
       cursor: url('hammer.png') 32 32, auto;
     }
 
-    /* 오른쪽 점수 기록판 */
+    /* 사이드바 영역 (TOP 3 + 최근 기록) */
     #score-board {
-      width: 280px;
+      width: 320px;
       height: 540px;
       background: #2a2a2a;
       border: 4px solid #444;
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .board-section {
       display: flex;
       flex-direction: column;
     }
 
-    #score-board h2 {
-      margin-top: 0;
-      font-size: 20px;
-      color: #ffda79;
-      border-bottom: 2px solid #444;
-      padding-bottom: 10px;
-      text-align: center;
+    .board-section.recent {
+      flex-grow: 1;
+      overflow: hidden;
     }
 
-    #history-list {
+    #score-board h2 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      color: #ffda79;
+      border-bottom: 2px solid #444;
+      padding-bottom: 4px;
+    }
+
+    .record-list {
       list-style: none;
       padding: 0;
       margin: 0;
       overflow-y: auto;
-      flex-grow: 1;
     }
 
-    #history-list li {
+    .record-list li {
       background: #333;
-      padding: 10px;
+      padding: 8px 10px;
       border-radius: 6px;
-      margin-bottom: 8px;
-      font-size: 14px;
-      line-height: 1.4;
+      margin-bottom: 6px;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .top-list li {
+      background: #3a3218;
+      border: 1px solid #ffda79;
     }
 
     .bonus-text {
-      font-size: 12px;
+      font-size: 11px;
       color: #ffda79;
     }
 
@@ -241,7 +253,7 @@
         <div class="hole" data-index="8"><div class="mouse"></div></div>
       </div>
 
-      <!-- 스타트 / 결과 오버레이 -->
+      <!-- 오버레이 화면 -->
       <div id="overlay-screen" class="overlay">
         <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
         <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈가 모두 사라지면 실패합니다!</p>
@@ -252,12 +264,21 @@
       </div>
     </div>
 
-    <!-- 우측 점수 기록판 -->
+    <!-- 우측 점수 기록판 (TOP 3 & 최근 20개) -->
     <div id="score-board">
-      <h2>🏆 최근 기록</h2>
-      <ul id="history-list">
-        <li style="text-align: center; color: #888;">기록이 없습니다.</li>
-      </ul>
+      <div class="board-section">
+        <h2>👑 명예의 전당 (TOP 3)</h2>
+        <ul id="top-list" class="record-list top-list">
+          <li style="text-align: center; color: #888;">기록 없음</li>
+        </ul>
+      </div>
+
+      <div class="board-section recent">
+        <h2>📜 최근 기록 (최대 20개)</h2>
+        <ul id="history-list" class="record-list">
+          <li style="text-align: center; color: #888;">기록 없음</li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -269,7 +290,9 @@
     let timerInterval = null;
     let isHit = false;
     let isGameRunning = false;
-    let historyRecords = [];
+    
+    // 기록 배열 관리
+    let recentRecords = []; // 최근 최대 20개
 
     const scoreDisplay = document.getElementById('score-display');
     const timeDisplay = document.getElementById('time-display');
@@ -280,6 +303,7 @@
     const startBtn = document.getElementById('start-btn');
     const homeBtn = document.getElementById('home-btn');
     const historyList = document.getElementById('history-list');
+    const topList = document.getElementById('top-list');
     const holes = document.querySelectorAll('.hole');
 
     function updateCheeseUI() {
@@ -356,20 +380,42 @@
       });
     });
 
+    // 기록 추가 및 화면 UI 갱신 함수
     function addScoreRecord(finalScore, bonusScore, isSuccess) {
-      if (historyRecords.length === 0) {
-        historyList.innerHTML = '';
+      // 1. 최근 기록 배열 업데이트 (최대 20개 유지)
+      recentRecords.unshift({ finalScore, bonusScore, isSuccess });
+      if (recentRecords.length > 20) {
+        recentRecords.pop();
       }
 
-      const li = document.createElement('li');
-      if (isSuccess) {
-        li.innerHTML = `<b>성공</b> - ${finalScore}점 <br><span class="bonus-text">(치즈 보너스: +${bonusScore}점)</span>`;
+      // 2. 최근 기록 UI 렌더링
+      historyList.innerHTML = '';
+      recentRecords.forEach((rec, idx) => {
+        const li = document.createElement('li');
+        if (rec.isSuccess) {
+          li.innerHTML = `<b>#${recentRecords.length - idx} 성공</b> - ${rec.finalScore}점<br><span class="bonus-text">(치즈 보너스: +${rec.bonusScore}점)</span>`;
+        } else {
+          li.innerHTML = `<b style="color:#ff5252;">#${recentRecords.length - idx} 실패</b> - 기록 없음`;
+        }
+        historyList.appendChild(li);
+      });
+
+      // 3. TOP 3 (성공한 기록 중 최고 점수 상위 3개) 계산 및 렌더링
+      const successRecords = recentRecords.filter(r => r.isSuccess);
+      successRecords.sort((a, b) => b.finalScore - a.finalScore);
+      const top3 = successRecords.slice(0, 3);
+
+      topList.innerHTML = '';
+      if (top3.length === 0) {
+        topList.innerHTML = '<li style="text-align: center; color: #888;">기록 없음</li>';
       } else {
-        li.innerHTML = `<b style="color:#ff5252;">실패</b> - 기록 없음`;
+        top3.forEach((rec, idx) => {
+          const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
+          const li = document.createElement('li');
+          li.innerHTML = `<b>${medal} ${idx + 1}위</b>: ${rec.finalScore}점 <span class="bonus-text">(+${rec.bonusScore})</span>`;
+          topList.appendChild(li);
+        });
       }
-
-      historyList.prepend(li);
-      historyRecords.push({ finalScore, bonusScore, isSuccess });
     }
 
     function startGame() {
