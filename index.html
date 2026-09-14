@@ -320,7 +320,6 @@
     let popInterval = 1500;
     let stayDuration = 1200;
 
-    // localStorage에서 저장된 기록 불러오기
     let recentRecords = JSON.parse(localStorage.getItem('cheese_game_records')) || [];
 
     const gameContainer = document.getElementById('game-container');
@@ -402,17 +401,18 @@
       return holes[idx];
     }
 
+    // 난이도 조절 함수 (수정된 파라미터 적용)
     function adjustDifficulty() {
       const elapsed = 30 - timeRemaining;
 
       if (elapsed >= 20) {
-        popInterval = 1100;
-        stayDuration = 900;
+        popInterval = 1000;   // 3단계: 1.0초마다 출현
+        stayDuration = 650;   // 3단계: 0.65초 동안 머무름
         speedIndicator.textContent = "단계: 3단계 (숙련 🔥)";
         speedIndicator.style.color = "#ff5252";
       } else if (elapsed >= 10) {
-        popInterval = 1300;
-        stayDuration = 1050;
+        popInterval = 1300;   // 2단계: 1.3초마다 출현
+        stayDuration = 900;   // 2단계: 0.9초 동안 머무름
         speedIndicator.textContent = "단계: 2단계 (빠름 ⚡)";
         speedIndicator.style.color = "#ffbe76";
       }
@@ -478,7 +478,6 @@
       });
     });
 
-    // 점수판 UI 업데이트 및 localStorage 저장 로직
     function updateRecordUI() {
       historyList.innerHTML = '';
       if (recentRecords.length === 0) {
@@ -516,7 +515,6 @@
       recentRecords.unshift({ finalScore, bonusScore, isSuccess });
       if (recentRecords.length > 20) recentRecords.pop();
 
-      // 브라우저 저장소에 기록 저장
       localStorage.setItem('cheese_game_records', JSON.stringify(recentRecords));
 
       updateRecordUI();
@@ -574,7 +572,6 @@
     startBtn.addEventListener('click', startGame);
     homeBtn.addEventListener('click', goHome);
 
-    // 초기화 시 UI 및 기존 기록 불러오기
     updateCheeseUI();
     updateRecordUI();
   </script>
