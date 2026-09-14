@@ -11,7 +11,7 @@
     }
     body {
       margin: 0;
-      padding: 0;
+      padding: 20px;
       background-color: #1a1a1a;
       color: #ffffff;
       font-family: 'Pretendard', sans-serif;
@@ -19,12 +19,17 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
+    /* 카드 2: 해상도(1366x768, 1920x1080) 대응 반응형 감싸기 (T02-C10, C11, C13) */
     #main-wrapper {
       display: flex;
       gap: 20px;
       align-items: flex-start;
+      max-width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     #game-container {
@@ -36,9 +41,9 @@
       border-radius: 12px;
       overflow: hidden;
       cursor: url('hammer.png') 32 32, auto;
+      flex-shrink: 0;
     }
 
-    /* 사이드바 영역 (TOP 3 + 최근 기록) */
     #score-board {
       width: 320px;
       height: 540px;
@@ -49,6 +54,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      flex-shrink: 0;
     }
 
     .board-section {
@@ -95,7 +101,6 @@
       color: #ffda79;
     }
 
-    /* 상단 UI 바 */
     #ui-bar {
       position: absolute;
       top: 0;
@@ -127,7 +132,6 @@
       color: #ffda79;
     }
 
-    /* 3x3 구멍 영역 */
     .grid-container {
       position: absolute;
       top: 140px;
@@ -164,7 +168,6 @@
       bottom: 10px;
     }
 
-    /* 오버레이 화면 */
     .overlay {
       position: absolute;
       top: 0;
@@ -226,7 +229,6 @@
 <body>
 
   <div id="main-wrapper">
-    <!-- 게임 화면 -->
     <div id="game-container">
       <div id="ui-bar">
         <div>
@@ -253,7 +255,6 @@
         <div class="hole" data-index="8"><div class="mouse"></div></div>
       </div>
 
-      <!-- 오버레이 화면 -->
       <div id="overlay-screen" class="overlay">
         <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
         <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈가 모두 사라지면 실패합니다!</p>
@@ -264,7 +265,6 @@
       </div>
     </div>
 
-    <!-- 우측 점수 기록판 (TOP 3 & 최근 20개) -->
     <div id="score-board">
       <div class="board-section">
         <h2>👑 명예의 전당 (TOP 3)</h2>
@@ -288,11 +288,12 @@
     let cheeseCount = 3;
     let gameInterval = null;
     let timerInterval = null;
+    let activeMouse = null;
     let isHit = false;
     let isGameRunning = false;
+    let isPaused = false; // 일시정지 상태 (포커스 이탈 시)
     
-    // 기록 배열 관리
-    let recentRecords = []; // 최근 최대 20개
+    let recentRecords = [];
 
     const scoreDisplay = document.getElementById('score-display');
     const timeDisplay = document.getElementById('time-display');
@@ -321,6 +322,7 @@
       timeRemaining = 30;
       cheeseCount = 3;
       isGameRunning = true;
+      isPaused = false;
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeRemaining;
       updateCheeseUI();
@@ -328,6 +330,7 @@
       holes.forEach(hole => {
         const mouse = hole.querySelector('.mouse');
         mouse.classList.remove('up');
+        mouse.dataset.clickable = "false";
         mouse.style.backgroundImage = '';
       });
     }
@@ -338,20 +341,23 @@
     }
 
     function popUpMouse() {
-      if (!isGameRunning) return;
+      if (!isGameRunning || isPaused) return;
 
       const hole = getRandomHole();
       const mouse = hole.querySelector('.mouse');
+      activeMouse = mouse;
       isHit = false;
 
+      mouse.dataset.clickable = "true"; // 광클 방지용 클릭 가능 상태 설정 (T02-C12)
       mouse.style.backgroundImage = "url('mouse_popup.png')";
       mouse.classList.add('up');
 
       setTimeout(() => {
         if (mouse.classList.contains('up')) {
           mouse.classList.remove('up');
+          mouse.dataset.clickable = "false";
 
-          if (!isHit && isGameRunning) {
+          if (!isHit && isGameRunning && !isPaused) {
             cheeseCount--;
             updateCheeseUI();
 
@@ -363,12 +369,18 @@
       }, 1000);
     }
 
+    // 카드 2: 광클 연타 시 중복 점수 획득 방지 (T02-C12)
     holes.forEach(hole => {
       const mouse = hole.querySelector('.mouse');
-      mouse.addEventListener('click', () => {
-        if (!isGameRunning || isHit || !mouse.classList.contains('up')) return;
+      mouse.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // 이미 맞았거나, 클릭 불가능 상태거나, 일시정지 상태면 무시
+        if (!isGameRunning || isPaused || isHit || mouse.dataset.clickable !== "true") return;
 
         isHit = true;
+        mouse.dataset.clickable = "false"; // 1회 클릭 후 클릭 불가 상태로 변경
+
         score += 100;
         scoreDisplay.textContent = score;
 
@@ -380,15 +392,25 @@
       });
     });
 
-    // 기록 추가 및 화면 UI 갱신 함수
+    // 카드 2: 포커스 이탈/복귀 시 자동 일시정지 및 재개 (T02-C14, C15)
+    window.addEventListener('blur', () => {
+      if (isGameRunning) {
+        isPaused = true;
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      if (isGameRunning && isPaused) {
+        isPaused = false;
+      }
+    });
+
     function addScoreRecord(finalScore, bonusScore, isSuccess) {
-      // 1. 최근 기록 배열 업데이트 (최대 20개 유지)
       recentRecords.unshift({ finalScore, bonusScore, isSuccess });
       if (recentRecords.length > 20) {
         recentRecords.pop();
       }
 
-      // 2. 최근 기록 UI 렌더링
       historyList.innerHTML = '';
       recentRecords.forEach((rec, idx) => {
         const li = document.createElement('li');
@@ -400,7 +422,6 @@
         historyList.appendChild(li);
       });
 
-      // 3. TOP 3 (성공한 기록 중 최고 점수 상위 3개) 계산 및 렌더링
       const successRecords = recentRecords.filter(r => r.isSuccess);
       successRecords.sort((a, b) => b.finalScore - a.finalScore);
       const top3 = successRecords.slice(0, 3);
@@ -423,21 +444,26 @@
       overlayScreen.classList.add('hidden');
 
       timerInterval = setInterval(() => {
-        timeRemaining--;
-        timeDisplay.textContent = timeRemaining;
+        if (!isPaused) {
+          timeRemaining--;
+          timeDisplay.textContent = timeRemaining;
 
-        if (timeRemaining <= 0) {
-          endGame(true);
+          if (timeRemaining <= 0) {
+            endGame(true);
+          }
         }
       }, 1000);
 
       gameInterval = setInterval(() => {
-        popUpMouse();
+        if (!isPaused) {
+          popUpMouse();
+        }
       }, 1200);
     }
 
     function endGame(isSuccess) {
       isGameRunning = false;
+      isPaused = false;
       clearInterval(gameInterval);
       clearInterval(timerInterval);
 
