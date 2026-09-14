@@ -22,7 +22,7 @@
       overflow-x: hidden;
     }
 
-    /* 게임 화면과 랭킹창을 옆으로 나란히 배치하는 메인 레이아웃 */
+    /* 게임 화면과 최근 점수 패널을 나란히 배치 */
     #main-wrapper {
       display: flex;
       gap: 20px;
@@ -40,48 +40,51 @@
       cursor: none;
     }
 
-    /* 우측 사이드 랭킹 패널 */
-    #side-leaderboard {
-      width: 240px;
+    /* 우측 최근 점수 20개 독립 패널 */
+    #side-history {
+      width: 250px;
       height: 540px;
       background: #2a2a2a;
       border: 4px solid #444;
       border-radius: 12px;
-      padding: 20px 16px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
     }
 
-    #side-leaderboard h2 {
-      margin: 0 0 15px 0;
-      font-size: 20px;
+    #side-history h2 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
       color: #ffda79;
       text-align: center;
       border-bottom: 2px solid #444;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
     }
 
-    #leaderboard-list {
+    #history-list {
       list-style: none;
       padding: 0;
       margin: 0;
-      font-size: 15px;
+      font-size: 14px;
+      overflow-y: auto;
+      flex: 1;
     }
 
-    #leaderboard-list li {
+    #history-list li {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 8px;
-      margin-bottom: 8px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
       background: rgba(255, 255, 255, 0.05);
       border-radius: 6px;
-      border: 1px solid rgba(255, 218, 121, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    #leaderboard-list li:nth-child(1) { color: #ffd700; border-color: #ffd700; font-weight: bold; }
-    #leaderboard-list li:nth-child(2) { color: #c0c0c0; }
-    #leaderboard-list li:nth-child(3) { color: #cd7f32; }
+    #history-list li span.date {
+      color: #aaa;
+      font-size: 12px;
+    }
 
     #hammer {
       position: absolute;
@@ -253,7 +256,7 @@
 
       <div id="ui-bar">
         <div>
-          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요! (⚡ 빠른 쥐는 200점!)</div>
+          <div id="game-rule">🎮 쥐를 클릭해 치즈를 지키세요!</div>
           <div class="info-box">남은 시간: <span id="time-display">30</span>초</div>
         </div>
         <div class="info-box">
@@ -290,12 +293,12 @@
       </div>
     </div>
 
-    <!-- 우측 독립 랭킹 패널 -->
-    <div id="side-leaderboard">
-      <h2>🏆 TOP 3 랭킹</h2>
-      <ol id="leaderboard-list">
-        <li><span>기록 없음</span><span>-</span></li>
-      </ol>
+    <!-- 우측 최근 점수 20개 패널 -->
+    <div id="side-history">
+      <h2>📋 최근 점수 (최대 20개)</h2>
+      <ul id="history-list">
+        <li><span>기록 없음</span></li>
+      </ul>
     </div>
   </div>
 
@@ -401,35 +404,38 @@
       });
     }
 
-    // --- LocalStorage TOP 3 랭킹 시스템 ---
-    function getScores() {
-      const scores = localStorage.getItem('cheeseGameScores');
+    // --- LocalStorage 최근 점수 20개 관리 ---
+    function getRecentScores() {
+      const scores = localStorage.getItem('cheeseGameRecentScores');
       return scores ? JSON.parse(scores) : [];
     }
 
     function saveScore(newScore) {
-      if (newScore <= 0) return;
-      const scores = getScores();
-      const dateStr = new Date().toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
-      scores.push({ score: newScore, date: dateStr });
-      scores.sort((a, b) => b.score - a.score);
-      const top3 = scores.slice(0, 3);
-      localStorage.setItem('cheeseGameScores', JSON.stringify(top3));
+      const scores = getRecentScores();
+      const now = new Date();
+      const timeStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      // 최신 점수를 맨 앞에 추가
+      scores.unshift({ score: newScore, time: timeStr });
+      
+      // 최대 20개만 유지
+      const recent20 = scores.slice(0, 20);
+      localStorage.setItem('cheeseGameRecentScores', JSON.stringify(recent20));
     }
 
-    function renderLeaderboard() {
-      const listEl = document.getElementById('leaderboard-list');
-      const scores = getScores();
+    function renderHistory() {
+      const listEl = document.getElementById('history-list');
+      const scores = getRecentScores();
       listEl.innerHTML = '';
 
       if (scores.length === 0) {
-        listEl.innerHTML = '<li><span>기록 없음</span><span>-</span></li>';
+        listEl.innerHTML = '<li><span>기록 없음</span></li>';
         return;
       }
 
-      scores.forEach((item, index) => {
+      scores.forEach((item) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span>${index + 1}위 (${item.date})</span><b>${item.score}점</b>`;
+        li.innerHTML = `<span class="date">${item.time}</span><b>${item.score}점</b>`;
         listEl.appendChild(li);
       });
     }
@@ -530,9 +536,9 @@
       const mouse = hole.querySelector('.mouse');
       isHit = false;
 
-      // 10% 확률로 빠른 보너스 쥐 출현
+      // 10% 확률로 빠른 보너스 쥐 출현 (0.3초 노출)
       const isFast = Math.random() < 0.10;
-      const stayDuration = isFast ? 500 : 1000;
+      const stayDuration = isFast ? 300 : 1000;
 
       mouse.dataset.isFast = isFast ? "true" : "false";
       mouse.dataset.clickable = "true";
@@ -571,11 +577,11 @@
 
         playHitSound();
 
-        const isFast = mouse.dataset.isFast === "true";
-        const points = isFast ? 200 : 100;
-        score += points;
+        // 점수 구분 없이 동일하게 100점 추가
+        score += 100;
         scoreDisplay.textContent = score;
 
+        const isFast = mouse.dataset.isFast === "true";
         mouse.style.backgroundImage = isFast ? "url('fast_mouse_hit.png')" : "url('mouse_hit.png')";
 
         setTimeout(() => {
@@ -617,24 +623,20 @@
       overlayScreen.classList.remove('hidden');
       homeBtn.classList.remove('hidden');
 
-      let finalScore = score;
-
       if (isSuccess && cheeseCount > 0) {
         playWinSound();
-        const bonusScore = cheeseCount * 300;
-        finalScore = score + bonusScore;
         overlayTitle.textContent = "🎉 성공! 치즈를 지켜냈습니다!";
-        overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
+        overlayDesc.innerHTML = `최종 점수: <b>${score}점</b>`;
         startBtn.textContent = "다시 시작";
       } else {
         playGameOverSound();
         overlayTitle.textContent = "💥 실패! 치즈를 모두 빼앗겼습니다.";
-        overlayDesc.innerHTML = `획득 점수: ${score}점<br>30초 동안 치즈를 지키지 못했습니다.`;
+        overlayDesc.innerHTML = `최종 점수: <b>${score}점</b><br>30초 동안 치즈를 지키지 못했습니다.`;
         startBtn.textContent = "다시 시작";
       }
 
-      saveScore(finalScore);
-      renderLeaderboard();
+      saveScore(score);
+      renderHistory();
     }
 
     function goHome() {
@@ -645,14 +647,14 @@
       resetGame();
       isGameRunning = false;
       bgmAudio.pause();
-      renderLeaderboard();
+      renderHistory();
     }
 
     startBtn.addEventListener('click', startGame);
     homeBtn.addEventListener('click', goHome);
 
     updateCheeseUI();
-    renderLeaderboard();
+    renderHistory();
   </script>
 </body>
 </html>
