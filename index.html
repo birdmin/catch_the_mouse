@@ -140,13 +140,14 @@
       bottom: 10px;
     }
 
+    /* 오버레이 화면 및 랭킹창 레이아웃 */
     .overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.88);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -156,52 +157,59 @@
     }
 
     .overlay h1 {
-      font-size: 36px;
-      margin-bottom: 10px;
+      font-size: 32px;
+      margin: 0 0 8px 0;
       color: #ffda79;
+      text-align: center;
     }
 
     .overlay p {
-      font-size: 16px;
-      margin-bottom: 20px;
+      font-size: 15px;
+      margin: 0 0 15px 0;
       text-align: center;
-      line-height: 1.5;
+      line-height: 1.4;
+      color: #ddd;
     }
 
-    /* 랭킹창 스타일 */
     #ranking-board {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 10px 20px;
+      background: rgba(40, 40, 40, 0.9);
+      border: 2px solid #ffda79;
+      border-radius: 10px;
+      padding: 12px 20px;
       margin-bottom: 20px;
-      width: 300px;
+      width: 320px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     }
 
     #ranking-board h3 {
-      margin: 0 0 8px 0;
-      font-size: 15px;
+      margin: 0 0 10px 0;
+      font-size: 16px;
       color: #ffda79;
       text-align: center;
+      letter-spacing: 1px;
     }
 
     .rank-list {
       list-style: none;
       padding: 0;
       margin: 0;
-      font-size: 14px;
     }
 
     .rank-item {
       display: flex;
       justify-content: space-between;
-      padding: 4px 0;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+      align-items: center;
+      padding: 6px 10px;
+      margin-bottom: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: bold;
     }
 
-    .rank-item:last-child {
-      border-bottom: none;
-    }
+    .rank-item:nth-child(1) { color: #ffd700; } /* 1위 금색 */
+    .rank-item:nth-child(2) { color: #c0c0c0; } /* 2위 은색 */
+    .rank-item:nth-child(3) { color: #cd7f32; } /* 3위 동색 */
 
     .btn-group {
       display: flex;
@@ -268,13 +276,14 @@
       <div class="hole" data-index="8"><div class="mouse"></div></div>
     </div>
 
+    <!-- 랭킹창이 명확하게 포함된 오버레이 화면 -->
     <div id="overlay-screen" class="overlay">
       <h1 id="overlay-title">🧀 치즈를 지켜라!</h1>
       <p id="overlay-desc">30초 동안 쥐들이 치즈를 훔쳐가지 못하게 잡으세요.<br>치즈 3개를 모두 빼앗기지 않고 지켜내야 합니다!</p>
       
-      <!-- 랭킹창 UI -->
+      <!-- 랭킹창 레이아웃 -->
       <div id="ranking-board">
-        <h3>🏆 TOP 3 랭킹</h3>
+        <h3>🏆 명예의 전당 (TOP 3)</h3>
         <ul id="rank-list" class="rank-list">
           <li class="rank-item"><span>1위</span><span>0점</span></li>
           <li class="rank-item"><span>2위</span><span>0점</span></li>
@@ -399,7 +408,7 @@
     let isGameRunning = false;
     let popInterval = 1500;
 
-    // 랭킹 데이터 관리 (로컬 스토리지 연동)
+    // 로컬 스토리지에서 랭킹 데이터 불러오기 (기본값 3개)
     let rankings = JSON.parse(localStorage.getItem('cheese_rankings')) || [0, 0, 0];
 
     const gameContainer = document.getElementById('game-container');
@@ -667,7 +676,7 @@
       updateRankingUI();
 
       if (isSuccess && cheeseCount > 0) {
-        overlayDesc.innerHTML = `획득 점수: ${score}점<br>치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
+        overlayDesc.innerHTML = `획득 점수: ${score}점 | 치즈 보너스(+${bonusScore}점)<br><b>최종 점수: ${finalScore}점</b>`;
       } else {
         overlayDesc.innerHTML = `30초 동안 치즈를 지키지 못했습니다.<br><b>최종 점수: ${finalScore}점</b>`;
       }
