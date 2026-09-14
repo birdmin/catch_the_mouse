@@ -154,19 +154,20 @@
       font-weight: bold;
     }
 
-    /* BGM 토글 버튼 스타일 */
-    #bgm-btn {
+    /* 사운드 제어 버튼공통 스타일 */
+    .audio-btn {
       background: rgba(255, 255, 255, 0.15);
       border: 1px solid #ffda79;
       color: #ffda79;
-      padding: 4px 10px;
+      padding: 4px 8px;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       transition: background 0.2s;
+      white-space: nowrap;
     }
 
-    #bgm-btn:hover {
+    .audio-btn:hover {
       background: rgba(255, 255, 255, 0.3);
     }
 
@@ -289,7 +290,8 @@
         </div>
         <div class="info-box">
           치즈: <span id="cheese-container"></span>
-          <button id="bgm-btn">🎵 BGM ON</button>
+          <button id="bgm-btn" class="audio-btn">🎵 BGM ON</button>
+          <button id="sfx-btn" class="audio-btn">🔊 SFX ON</button>
         </div>
       </div>
 
@@ -350,14 +352,18 @@
     const database = firebase.database();
     const recordsRef = database.ref('game_records');
 
-    // --- Audio 객체 및 BGM 제어 ---
+    // --- Audio 객체 및 사운드 제어 ---
     const bgmAudio = document.getElementById('bgm');
     const bgmBtn = document.getElementById('bgm-btn');
+    const sfxBtn = document.getElementById('sfx-btn');
+
     let isBgmMuted = false;
+    let isSfxMuted = false;
+
     bgmAudio.volume = 0.3; // 배경음악 볼륨 조정 (30%)
 
     bgmBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); // 망치 찍기 방지
+      e.stopPropagation(); // 망치 찍기 동작 방지
       isBgmMuted = !isBgmMuted;
       if (isBgmMuted) {
         bgmAudio.pause();
@@ -366,6 +372,12 @@
         if (isGameRunning) bgmAudio.play();
         bgmBtn.textContent = '🎵 BGM ON';
       }
+    });
+
+    sfxBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 망치 찍기 동작 방지
+      isSfxMuted = !isSfxMuted;
+      sfxBtn.textContent = isSfxMuted ? '🔇 SFX OFF' : '🔊 SFX ON';
     });
 
     let audioCtx = null;
@@ -380,7 +392,7 @@
     }
 
     function playSwingSound() {
-      if (!audioCtx) return;
+      if (!audioCtx || isSfxMuted) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'sine';
@@ -395,7 +407,7 @@
     }
 
     function playHitSound() {
-      if (!audioCtx) return;
+      if (!audioCtx || isSfxMuted) return;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'triangle';
@@ -410,7 +422,7 @@
     }
 
     function playWinSound() {
-      if (!audioCtx) return;
+      if (!audioCtx || isSfxMuted) return;
       const notes = [523.25, 659.25, 783.99, 1046.50];
       notes.forEach((freq, idx) => {
         const osc = audioCtx.createOscillator();
@@ -426,7 +438,7 @@
     }
 
     function playGameOverSound() {
-      if (!audioCtx) return;
+      if (!audioCtx || isSfxMuted) return;
       const notes = [400, 350, 300, 220];
       notes.forEach((freq, idx) => {
         const osc = audioCtx.createOscillator();
